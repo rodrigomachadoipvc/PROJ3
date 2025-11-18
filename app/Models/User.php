@@ -41,13 +41,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(TipoUtilizador::class, 'tipo_utilizador_id');
     }
 
-    public function grupos(): BelongsToMany
-    {
-        return $this->belongsToMany(Grupo::class, 'utilizador_grupo', 'utilizador_id', 'grupo_id')
-                    ->withPivot('funcao_no_grupo')
-                    ->withTimestamps();
-    }
-
     public function hasPermissionTo(string $permissao): bool
     {
         if (!$this->tipoUtilizador) {
@@ -71,6 +64,13 @@ class User extends Authenticatable implements MustVerifyEmail
     public function gruposCriados(): HasMany
     {
         return $this->hasMany(Grupo::class, 'criador_id');
+    }
+
+    public function grupos()
+    {
+        return $this->belongsToMany(Grupo::class, 'grupo_user')
+                    ->withPivot('is_admin')
+                    ->withTimestamps();
     }
 
 }

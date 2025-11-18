@@ -4,39 +4,31 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Conversa; 
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use App\Models\Conversa;
+use App\Models\Mensagem; 
 
 class ChatController extends Controller
 {
     /**
      * Exibe a interface principal do chat.
+     * Carrega as conversas, outros utilizadores, e a conversa ativa (se selecionada).
      */
-    public function index()
+    public function index(Request $request)
     {
-        $utilizador = Auth::user();
-
-        // Carrega as conversas em que o utilizador participa
-        $conversas = $utilizador->conversasParticipadas()
-                                ->with(['ultimaMensagem.emissor']) 
-                                ->orderBy('created_at', 'desc')
-                                ->get();
-                                
-        $outrosUtilizadores = User::where('id', '!=', $utilizador->id)
-                                  ->orderBy('nome')
-                                  ->get();
-
-        // Passa conversas e outros utilizadores para a view
-        return view('chat.index', compact('conversas', 'outrosUtilizadores'));
+        
+        return view('chat.index');
     }
 
+    /**
+     * Inicia ou recupera uma conversa DM com outro utilizador.
+     */
     public function iniciarConversaDM(Request $request, $outroUtilizadorId)
     {
         $utilizadorAtual = Auth::user();
         $outroUtilizador = User::findOrFail($outroUtilizadorId);
 
-        // 1. Verifica se já existe uma conversa DM entre os dois
-        // Procura uma conversa do tipo 'dm' onde AMBOS participam
         $conversa = $utilizadorAtual->conversasParticipadas()
             ->where('tipo', 'dm')
             ->whereHas('participantes', function ($query) use ($outroUtilizadorId) {
@@ -45,16 +37,12 @@ class ChatController extends Controller
             ->whereHas('participantes', null, '=', 2) 
             ->first();
 
-        // 2. Se não existir, cria a conversa
         if (!$conversa) {
             $conversa = Conversa::create(['tipo' => 'dm']);
-            
-            // Adiciona ambos os utilizadores como participantes
             $conversa->participantes()->attach([$utilizadorAtual->id, $outroUtilizador->id]);
         }
 
-        // 3. Redireciona para a interface do chat, selecionando a conversa
-        return redirect()->route('chat.index')->with('conversa_ativa_id', $conversa->id); 
+        return redirect()->route('chat.index')
+                         ->with('conversa_ativa_id', $conversa->id); 
     }
-
 }

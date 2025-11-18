@@ -18,14 +18,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Rotas de utilizador autenticado (Chat, Profile, etc.)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // --- Rotas do Chat ---
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-    Route::get('/chat/iniciar-dm/{outroUtilizadorId}', [ChatController::class, 'iniciarConversaDM'])
-         ->name('chat.iniciar-dm')
-         ->where('outroUtilizadorId', '[0-9]+');
 });
 
 require __DIR__.'/auth.php';
@@ -50,11 +50,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Dashboard/Home da Administração
         Route::get('/dashboard', function () {
-            // Verifica se o utilizador é Administrador antes de carregar a view
-            if (Auth::user()->tipoUtilizador->nome !== 'Administrador') {
+            
+            // CORREÇÃO: Usar o operador Nullsafe (?->)
+            // Se 'tipoUtilizador' for null, a verificação falha e o abort(403) é chamado.
+            if (Auth::user()->tipoUtilizador?->nome !== 'Administrador') {
                 abort(403, 'Acesso Não Autorizado. Tipo de utilizador insuficiente.');
             }
             return view('admin.dashboard');
+
         })->name('dashboard');
 
         // CRUD de Tipos de Utilizadores (Roles)

@@ -31,4 +31,11 @@ class Grupo extends Model
         return $this->hasOne(Conversa::class, 'grupo_id');
     }
 
+    public function membros()
+    {
+        return $this->belongsToMany(User::class, 'grupo_user')
+                    ->withPivot('is_admin')
+                    ->withTimestamps();
+    }
+
 }

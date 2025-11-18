@@ -12,6 +12,8 @@ class Mensagem extends Model
 {
     use HasFactory, SoftDeletes; 
 
+    protected $table = 'mensagens';
+
     protected $fillable = ['conversa_id', 'emissor_id', 'conteudo', 'resposta_a_id', 'vista'];
 
     public function conversa(): BelongsTo
