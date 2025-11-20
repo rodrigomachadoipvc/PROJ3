@@ -1,82 +1,157 @@
-Communico - Plataforma de Chat Interno 💬
+# Communico — Internal Messaging Platform 💬
 
-Bem-vindo ao repositório do Communico. Este guia explica como configurar o projeto do zero no Windows.
+Communico is a modern and secure internal chat platform built with **Laravel 11**, **Livewire**, **TailwindCSS**, and **Docker**.  
+This guide explains how to set up the complete development environment on **Windows** using **Docker + WSL2**.
 
-📋 Pré-requisitos (Windows)
+---
 
-WSL 2 (Windows Subsystem for Linux):
+## 📦 Requirements (Windows)
 
-Abra o PowerShell como Administrador e corra: wsl --install (e reinicie o PC).
+Before starting, ensure the following tools are installed:
 
-Docker Desktop:
+### ✔ WSL 2 (Windows Subsystem for Linux)
+Open PowerShell **as Administrator** and run:
+```powershell
+wsl --install
+```
+Restart your computer when prompted.
 
-Instale e abra o Docker Desktop.
+### ✔ Docker Desktop
+Install Docker Desktop and enable:
+```
+Settings → General → "Use the WSL 2 based engine"
+```
 
-Vá a Settings > General e ative "Use the WSL 2 based engine".
+### ✔ Git  
+### ✔ Visual Studio Code
 
-Git e VS Code.
+---
 
-🚀 Instalação Passo a Passo
+## 🚀 Installation Guide (From Zero)
 
-1. Clonar o Repositório
+All commands below must be executed **inside the project folder**.
 
-No PowerShell, navegue para a pasta desejada e clone o projeto:
+---
 
-git clone <URL_DO_GITHUB_REPO> communico
+### 1. Clone the Repository
+```powershell
+git clone <REPOSITORY_URL> communico
 cd communico
+```
 
+---
 
-⚠️ IMPORTANTE: Todos os comandos seguintes devem ser executados DENTRO da pasta communico.
+### 2. Install Backend Dependencies (via Docker)
 
-2. Instalar Dependências (Backend)
+Because the `vendor/` folder is not included in the repository, install Laravel dependencies using a temporary container:
 
-Como não tens a pasta vendor (onde está o Laravel e o Sail), vamos usar o Docker para a criar:
-
+```powershell
 docker run --rm -v "${PWD}:/var/www/html" -w /var/www/html laravelsail/php83-composer:latest composer install --ignore-platform-reqs
+```
 
+---
 
-(Isto pode demorar alguns minutos).
+### 3. Environment Setup
 
-3. Configurar o Ambiente
-
-Copia o ficheiro de exemplo:
-
+Copy the example environment file:
+```powershell
 copy .env.example .env
+```
 
+If your team uses Laravel Reverb or other external services, add those keys to `.env`.
 
-Nota: Se precisares das chaves do Reverb para o chat, pede-as a um colega e cola-as no teu ficheiro .env.
+---
 
-4. Arrancar os Servidores
+### 4. Start the Docker Services
 
-Em vez de usar o comando sail, usa o Docker Compose diretamente:
-
+```powershell
 docker compose up -d
+```
 
+This starts:
+- PHP 8.3  
+- Nginx  
+- MySQL  
+- Redis (if enabled)
 
-5. Configuração Final (Dentro do Contentor)
+---
 
-Com os servidores a correr, executa estes comandos para configurar a base de dados e a aplicação:
+### 5. Application Bootstrap (Inside the Container)
 
-# 1. Gerar Chave de Encriptação
+Run the following commands:
+
+#### 🔑 Generate Application Key
+```powershell
 docker compose exec laravel.test php artisan key:generate
+```
 
-# 2. Criar Base de Dados e Admin
+#### 🗄 Run Migrations + Seeders (Creates all tables and default admin user)
+```powershell
 docker compose exec laravel.test php artisan migrate:fresh --seed
+```
 
-# 3. Instalar Frontend
+#### 📚 Install Frontend Dependencies (Node + Vite)
+```powershell
 docker compose exec laravel.test npm install
+```
 
+---
 
-💻 Como Executar no Dia-a-Dia
+## 💻 Daily Development Workflow
 
-Sempre que quiseres trabalhar no projeto, abre o VS Code na pasta communico e usa dois terminais:
+When working on the project, you only need two terminals:
 
-Terminal 1: Ligar o Backend
+---
 
+### **Terminal 1 — Start Backend Services**
+```powershell
 docker compose up -d
+```
 
+---
 
-Terminal 2: Ligar o Frontend (Vite)
-Este comando deve ficar a correr para o site ter estilo (CSS/JS):
-
+### **Terminal 2 — Start Frontend (Vite Hot Reload)**
+```powershell
 docker compose exec laravel.test npm run dev
+```
+
+This must remain running for CSS/JS and Livewire updates to work.
+
+---
+
+## 🎉 You're Ready to Develop
+
+Access the app at:
+
+```
+http://localhost
+```
+
+Default seeded admin credentials:
+```
+Email: admin@admin.com
+Password: password
+```
+
+---
+
+## 🧰 Tech Stack
+
+- **Backend:** Laravel 11 (PHP 8.3)
+- **Frontend:** TailwindCSS + Livewire 3 + Vite
+- **Database:** MySQL  
+- **Environment:** Docker / Laravel Sail  
+- **Authentication:** Email verification  
+- **Messaging:** Real-time foundations prepared for future Laravel Reverb integration
+
+---
+
+## 👥 Contributing
+
+Pull Requests and feature branches must follow your team's workflow.  
+Please ensure you run the linter and test the environment before submitting changes.
+
+---
+
+## © Communico — Internal Chat Platform
+Built for academic and enterprise collaboration.
