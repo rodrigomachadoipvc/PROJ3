@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; 
 use App\Models\Grupo;
+use App\Models\User;
 
 class GrupoController extends Controller
 {
@@ -152,4 +153,41 @@ class GrupoController extends Controller
         return redirect()->route('admin.grupos.index')
                          ->with('success', 'Grupo "' . $nomeGrupo . '" eliminado com sucesso.');
     }
+
+    public function adicionarMembro(Request $request, Grupo $grupo)
+    {
+        // Verifica se o utilizador tem permissão para editar grupos
+        if (!Auth::user()->hasPermissionTo('editar-grupos')) {
+            abort(403, 'Acesso não autorizado.');
+        }
+        
+        $request->validate(['user_id' => 'required|exists:users,id']);
+        $user = User::findOrFail($request->user_id); // Carregamos o modelo
+
+        try {
+            $grupo->membros()->attach($user->id);
+            return back()->with('success', 'Membro ' . $user->nome . ' adicionado ao grupo ' . $grupo->nome . ' com sucesso.');
+        } catch (\Exception $e) {
+            // Captura o erro se o utilizador já for membro
+            return back()->with('error', 'O utilizador já é membro deste grupo.');
+        }
+    }
+
+    public function removerMembro(Grupo $grupo, $user)
+    {
+        // Verifica se o utilizador tem permissão para editar grupos
+        if (!Auth::user()->hasPermissionTo('editar-grupos')) {
+            abort(403, 'Acesso não autorizado.');
+        }
+
+        $userModel = User::findOrFail($user); 
+
+        // Tenta remover (detach) o utilizador
+        if ($grupo->membros()->detach($userModel->id) > 0) {
+            return back()->with('success', 'Membro ' . $userModel->nome . ' removido do grupo com sucesso.');
+        }
+
+        return back()->with('error', 'O utilizador não é membro deste grupo ou ocorreu um erro.');
+    }
+
 }

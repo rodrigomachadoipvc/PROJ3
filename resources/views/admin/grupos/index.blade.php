@@ -5,8 +5,24 @@
         </h2>
     </x-slot>
 
-    <!-- Define o escopo Alpine.js para controlar o modal AQUI -->
-    <div x-data="{ showDeleteModal: false, deleteUrl: '' }">
+    {{-- [NOVO] Carregar todos os utilizadores para o modal de adição --}}
+    @php
+        // Carrega todos os utilizadores para a lista de "Adicionar Membros" no modal
+        $allUsers = \App\Models\User::orderBy('nome')->get();
+    @endphp
+
+    <div x-data="{ 
+        // Variáveis de Eliminar Grupo E Membro (UNIFICADAS NO deleteUrl)
+        showDeleteModal: false, 
+        deleteUrl: '', 
+        // Variáveis de Gestão de Membros
+        showMembrosModal: false, 
+        grupoId: null, 
+        grupoNome: '', 
+        // Variáveis de Eliminar Membro (NOVAS)
+        showMemberDeleteModal: false, 
+        memberName: '',
+    }">
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -50,15 +66,26 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $grupo->nome }}</td>
                                             <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{{ $grupo->descricao ?? '--' }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $grupo->criador->nome ?? __('Desconhecido') }}</td>
+                                            
+                                            {{-- Mostra a contagem real de membros --}}
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{-- TO-DO: Contar membros quando a relação estiver implementada --}}
-                                                0 {{ __('Membros') }} 
+                                                {{ $grupo->membros->count() }} {{ __('Membros') }} 
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <a href="{{ route('admin.grupos.edit', $grupo) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">{{ __('Editar') }}</a>
+
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
                                                 
-                                                <!-- Botão Eliminar (Chama o Alpine.js) -->
+                                                {{-- Botão de Gerir Membros --}}
                                                 <button 
+                                                    @click="showMembrosModal = true; grupoId = {{ $grupo->id }}; grupoNome = '{{ $grupo->nome }}'" 
+                                                    class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                                                    {{ __('Gerir Membros') }}
+                                                </button>
+
+                                                <a href="{{ route('admin.grupos.edit', $grupo) }}" class="text-indigo-600 hover:text-indigo-900">{{ __('Editar') }}</a>
+                                                
+                                                <!-- Botão Eliminar Grupo (Chama o Alpine.js) -->
+                                                <button 
+                                                    {{-- O deleteUrl é usado por ambos os modais de eliminação (Grupo e Membro) --}}
                                                     @click="showDeleteModal = true; deleteUrl = '{{ route('admin.grupos.destroy', $grupo) }}'" 
                                                     type="button" 
                                                     class="text-red-600 hover:text-red-900">
@@ -86,8 +113,8 @@
             </div>
         </div>
         
-        <!-- Modal de Confirmação (AGORA DENTRO DO ESCOPO x-data) -->
-         <div x-show="showDeleteModal" x-on:keydown.escape.window="showDeleteModal = false" style="display: none;">
+        <!-- Modal de Confirmação (Eliminar Grupo) -->
+        <div x-show="showDeleteModal" x-on:keydown.escape.window="showDeleteModal = false" style="display: none;">
              <x-confirm-modal 
                 name="group-delete" 
                 title="Atenção: Eliminar Grupo" 
@@ -97,5 +124,22 @@
             </x-confirm-modal>
         </div>
 
+        {{-- [NOVO] Modal de Confirmação (Remover Membro do Grupo) --}}
+        {{-- CORREÇÃO: Usa showMemberDeleteModal, a variável correta. Note que este modal também usa deleteUrl para o formulário --}}
+        <div x-show="showMemberDeleteModal" x-on:keydown.escape.window="showMemberDeleteModal = false" style="display: none;">
+             <x-confirm-modal 
+                name="member-delete" 
+                title="Remover Membro" 
+                content="" 
+                x-bind:content="'Tem a certeza que deseja remover o membro ' + memberName + ' do grupo?'"
+                method="DELETE"
+                x-bind:action-route="deleteUrl"> <!-- Usa deleteUrl para o formulário, que será definido pelo botão do modal de membros -->
+            </x-confirm-modal>
+        </div>
+
+        {{-- Incluir o Modal de Gestão de Membros --}}
+        @include('admin.grupos.membros_modal', ['grupo' => $grupo ?? null, 'users' => $allUsers])
+
     </div> <!-- Fim do escopo x-data -->
+
 </x-app-layout>

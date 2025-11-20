@@ -67,6 +67,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::resource('utilizadores', UtilizadorController::class);
         Route::resource('grupos', GrupoController::class);
+        Route::post('grupos/{grupo}/membros', [GrupoController::class, 'adicionarMembro'])->name('grupos.membros.store');
+        Route::delete('grupos/{grupo}/membros/{user}', [GrupoController::class, 'removerMembro'])->name('grupos.membros.destroy');
 
     });
 });

@@ -1,5 +1,9 @@
-@props(['name', 'title' => 'Confirmar Ação', 'content', 'method'])
+@props(['name', 'title' => 'Confirmar Ação', 'content' => '', 'method' => 'POST', 'actionRoute' => null])
 
+{{-- 
+    CORRIGIDO: A propriedade content é opcional com '' para não dar erro na inicialização.
+    A propriedade actionRoute (nova para remoção de membro) é tratada como opcional.
+--}}
 <div x-data="{ show: true }" x-show="show" x-on:keydown.escape.window="show = false" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
     <div x-show="show" class="fixed inset-0 transform transition-all" x-on:click="show = false" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
@@ -44,7 +48,8 @@
     </div>
 </div>
 
-<form id="{{ $name }}-form" method="POST" x-bind:action="deleteUrl" style="display: none;">
+{{-- [CORRIGIDO] O x-bind:action usa a variável actionRoute (se existir), caso contrário, usa deleteUrl (para compatibilidade com os CRUDs originais). --}}
+<form id="{{ $name }}-form" method="POST" x-bind:action="{{ $actionRoute ? 'actionRoute' : 'deleteUrl' }}" style="display: none;">
     @csrf
     @method($method)
 </form>
