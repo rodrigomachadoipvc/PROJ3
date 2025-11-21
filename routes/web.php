@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
 require __DIR__.'/auth.php';
 
 
+
 /*
 |--------------------------------------------------------------------------
 | ROTAS PROTEGIDAS (Área de Administração)
@@ -48,27 +49,58 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ÁREA ADMINISTRATIVA
     Route::prefix('admin')->name('admin.')->group(function () {
 
-        // Dashboard/Home da Administração
+        // Dashboard
         Route::get('/dashboard', function () {
-            
-            // CORREÇÃO: Usar o operador Nullsafe (?->)
-            // Se 'tipoUtilizador' for null, a verificação falha e o abort(403) é chamado.
+
             if (Auth::user()->tipoUtilizador?->nome !== 'Administrador') {
                 abort(403, 'Acesso Não Autorizado. Tipo de utilizador insuficiente.');
             }
-            return view('admin.dashboard');
 
+            return view('admin.dashboard');
         })->name('dashboard');
 
-        // CRUD de Tipos de Utilizadores (Roles)
+
+        /*
+        |--------------------------------------------------------------------------
+        | CRUDs Admin
+        |--------------------------------------------------------------------------
+        */
+
         Route::resource('tipos-utilizadores', TipoUtilizadorController::class)->parameters([
-            'tipos-utilizadores' => 'tipo_utilizador', 
+            'tipos-utilizadores' => 'tipo_utilizador',
         ]);
 
         Route::resource('utilizadores', UtilizadorController::class);
         Route::resource('grupos', GrupoController::class);
-        Route::post('grupos/{grupo}/membros', [GrupoController::class, 'adicionarMembro'])->name('grupos.membros.store');
-        Route::delete('grupos/{grupo}/membros/{user}', [GrupoController::class, 'removerMembro'])->name('grupos.membros.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Gestão de Membros de Grupo
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('grupos/{grupo}/membros', 
+            [GrupoController::class, 'adicionarMembro']
+        )->name('grupos.membros.store');
+
+        Route::delete('grupos/{grupo}/membros/{user}', 
+            [GrupoController::class, 'removerMembro']
+        )->name('grupos.membros.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Rota JSON para carregar membros dinamicamente (USADA PELO ALPINE)
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('grupos/{grupo}/membros-json', function (\App\Models\Grupo $grupo) {
+            return $grupo->membros()
+                ->select('users.id', 'users.nome', 'users.email')
+                ->get();
+        })->name('grupos.membros.json');
+
 
     });
 });
