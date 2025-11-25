@@ -2,15 +2,16 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\TipoUtilizadorController;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth; 
 use App\Http\Controllers\Admin\UtilizadorController;
 use App\Http\Controllers\Admin\GrupoController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\UserDashboardController;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
-| Rotas Públicas e de Autenticação (Breeze)
+| Rotas Públicas
 |--------------------------------------------------------------------------
 */
 
@@ -18,94 +19,123 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Rotas de utilizador autenticado (Chat, Profile, etc.)
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // --- Rotas do Chat ---
-    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-});
-
-Route::delete('/profile/avatar/remove', [ProfileController::class, 'removeAvatar'])
-    ->middleware(['auth'])
-    ->name('profile.avatar.remove');
-
-
-require __DIR__.'/auth.php';
-
+require __DIR__ . '/auth.php';
 
 
 /*
 |--------------------------------------------------------------------------
-| ROTAS PROTEGIDAS (Área de Administração)
+| Rotas Autenticadas (Dashboard dinâmico)
 |--------------------------------------------------------------------------
+|
+| Se o utilizador for ADMIN → admin.dashboard
+| Se for utilizador normal → dashboard.user
+|
 */
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // Redireciona o dashboard padrão para a nossa área administrativa
+    // ROTA PRINCIPAL DE DASHBOARD (decide automaticamente)
     Route::get('/dashboard', function () {
-        return redirect()->route('admin.dashboard');
+
+        $user = Auth::user();
+
+        if ($user->tipoUtilizador?->nome === 'Administrador') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return redirect()->route('user.dashboard');
+
     })->name('dashboard');
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard do Utilizador Normal
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/user/dashboard', [UserDashboardController::class, 'index'])
+        ->name('user.dashboard');
 
-    // ÁREA ADMINISTRATIVA
-    Route::prefix('admin')->name('admin.')->group(function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Perfil do Utilizador
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
 
-        // Dashboard
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+
+    Route::delete('/profile/avatar/remove', [ProfileController::class, 'removeAvatar'])
+        ->name('profile.avatar.remove');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Chat
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/chat', [ChatController::class, 'index'])
+        ->name('chat.index');
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| ROTAS DA ÁREA ADMINISTRATIVA
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'verified'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
+        // DASHBOARD ADMIN
         Route::get('/dashboard', function () {
 
             if (Auth::user()->tipoUtilizador?->nome !== 'Administrador') {
-                abort(403, 'Acesso Não Autorizado. Tipo de utilizador insuficiente.');
+                abort(403, 'Acesso Não Autorizado. Área exclusiva a administradores.');
             }
 
             return view('admin.dashboard');
+
         })->name('dashboard');
 
-
         /*
         |--------------------------------------------------------------------------
-        | CRUDs Admin
+        | CRUDs Administração
         |--------------------------------------------------------------------------
         */
 
-        Route::resource('tipos-utilizadores', TipoUtilizadorController::class)->parameters([
-            'tipos-utilizadores' => 'tipo_utilizador',
-        ]);
+        Route::resource('tipos-utilizadores', TipoUtilizadorController::class)
+            ->parameters(['tipos-utilizadores' => 'tipo_utilizador']);
 
         Route::resource('utilizadores', UtilizadorController::class);
+
         Route::resource('grupos', GrupoController::class);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Membros do Grupo
+        |--------------------------------------------------------------------------
+        */
+        Route::post('grupos/{grupo}/membros', [GrupoController::class, 'adicionarMembro'])
+            ->name('grupos.membros.store');
+
+        Route::delete('grupos/{grupo}/membros/{user}', [GrupoController::class, 'removerMembro'])
+            ->name('grupos.membros.destroy');
 
         /*
         |--------------------------------------------------------------------------
-        | Gestão de Membros de Grupo
+        | JSON para carregamento dinâmico
         |--------------------------------------------------------------------------
         */
-
-        Route::post('grupos/{grupo}/membros', 
-            [GrupoController::class, 'adicionarMembro']
-        )->name('grupos.membros.store');
-
-        Route::delete('grupos/{grupo}/membros/{user}', 
-            [GrupoController::class, 'removerMembro']
-        )->name('grupos.membros.destroy');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Rota JSON para carregar membros dinamicamente (USADA PELO ALPINE)
-        |--------------------------------------------------------------------------
-        */
-
         Route::get('grupos/{grupo}/membros-json', function (\App\Models\Grupo $grupo) {
             return $grupo->membros()
                 ->select('users.id', 'users.nome', 'users.email')
                 ->get();
         })->name('grupos.membros.json');
-
-
     });
-});
