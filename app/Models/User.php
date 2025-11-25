@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -73,4 +74,40 @@ class User extends Authenticatable implements MustVerifyEmail
                     ->withTimestamps();
     }
 
+    /**
+     * Iniciais (até 2 letras) para usar como avatar textual.
+     */
+    public function getInitialsAttribute(): string
+    {
+        $name = $this->nome ?? $this->attributes['name'] ?? '';
+
+        $initials = '';
+        if ($name) {
+            $parts = preg_split('/\s+/', trim($name));
+            $parts = array_filter($parts);
+
+            $i = 0;
+            foreach ($parts as $part) {
+                $initials .= mb_substr($part, 0, 1);
+                $i++;
+                if ($i >= 2) {
+                    break;
+                }
+            }
+        }
+
+        return strtoupper($initials ?: 'U');
+    }
+
+    /**
+     * URL público completo para o avatar (ou null).
+     */
+    public function getAvatarUrlPublicAttribute(): ?string
+    {
+        if (!$this->avatar_url) {
+            return null;
+        }
+
+        return asset('storage/' . $this->avatar_url);
+    }
 }

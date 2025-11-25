@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -26,15 +27,54 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Atualiza os campos “normais” (nome, email, etc.)
+        $user->fill($request->validated());
+
+        // Se o email mudou, força nova verificação
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        // Upload de avatar (opcional)
+        if ($request->hasFile('avatar')) {
+            $request->validate([
+                'avatar' => ['image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
+            ]);
+
+            // Apagar avatar anterior se existir
+            if ($user->avatar_url && Storage::disk('public')->exists($user->avatar_url)) {
+                Storage::disk('public')->delete($user->avatar_url);
+            }
+
+            // Guardar novo avatar
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar_url = $path;
+        }
+
+        $user->save();
+
+        $user->refresh();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Remove the user's avatar.
+     */
+    public function removeAvatar(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user->avatar_url && Storage::disk('public')->exists($user->avatar_url)) {
+            Storage::disk('public')->delete($user->avatar_url);
+        }
+
+        $user->avatar_url = null;
+        $user->save();
+
+        return Redirect::route('profile.edit')->with('status', 'avatar-removed');
     }
 
     /**

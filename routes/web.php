@@ -28,6 +28,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
 });
 
+Route::delete('/profile/avatar/remove', [ProfileController::class, 'removeAvatar'])
+    ->middleware(['auth'])
+    ->name('profile.avatar.remove');
+
+
 require __DIR__.'/auth.php';
 
 
