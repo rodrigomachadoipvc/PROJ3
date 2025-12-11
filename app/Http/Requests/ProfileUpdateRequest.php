@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,22 +9,26 @@ class ProfileUpdateRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-        'current_password' => ['required', 'current_password'],
-        'password' => [
-            'required',
-            'confirmed',
-            'string',
-            'min:8',
-            'regex:/[A-Z]/',      
-            'regex:/[0-9]/',
-            'regex:/[@$!%*?&#^()_+\-=]/',
-        ],
-    ];
+
+            // Nome do utilizador
+            'name' => ['required', 'string', 'max:255'],
+
+            // Email do utilizador
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($this->user()->id),
+            ],
+
+            // O avatar é validado apenas quando existe um ficheiro,
+            // no Controller, por isso não é necessário colocá-lo aqui.
+
+        ];
     }
 }

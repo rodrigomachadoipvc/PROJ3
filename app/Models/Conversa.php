@@ -13,7 +13,7 @@ class Conversa extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['tipo', 'grupo_id', 'nome', 'ultima_mensagem_id'];
+    protected $fillable = ['tipo', 'grupo_id', 'ultima_mensagem_id'];
 
     public function mensagens(): HasMany
     {

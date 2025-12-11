@@ -23,13 +23,11 @@
                 @php
                     $user = Auth::user();
 
-                    // URL pública completa do avatar (ou null)
+                    // Avatar URL (via accessor do model)
                     $avatar = $user->avatar_url_public;
 
-                    // Inicials fallback
-                    $iniciais = collect(explode(' ', $user->nome))
-                        ->map(fn($parte) => strtoupper(substr($parte, 0, 1)))
-                        ->join('');
+                    // Iniciais corretas (via accessor)
+                    $initials = $user->initials;
                 @endphp
 
                 <x-dropdown align="right" width="48">
@@ -45,11 +43,11 @@
                             @else
                                 <div class="h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center 
                                             font-bold shadow-sm me-2">
-                                    {{ $iniciais }}
+                                    {{ $initials }}
                                 </div>
                             @endif
 
-                            <div>{{ $user->nome }}</div>
+                            <div>{{ $user->name }}</div>
 
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4 text-gray-500"
@@ -119,12 +117,12 @@
                 @else
                     <div class="h-10 w-10 rounded-full bg-indigo-600 text-white flex items-center justify-center 
                                 font-bold me-3">
-                        {{ $iniciais }}
+                        {{ $initials }}
                     </div>
                 @endif
 
                 <div>
-                    <div class="font-medium text-base text-gray-800">{{ $user->nome }}</div>
+                    <div class="font-medium text-base text-gray-800">{{ $user->name }}</div>
                     <div class="font-medium text-sm text-gray-500">{{ $user->email }}</div>
                 </div>
             </div>

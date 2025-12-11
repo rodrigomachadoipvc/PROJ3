@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'brevo' => [
+        'api_key' => env('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'),
+    ],
+
 ];
