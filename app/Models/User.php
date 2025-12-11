@@ -9,7 +9,6 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -35,6 +34,18 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+
+    public function getNameAttribute()
+    {
+        return $this->attributes['nome'] ?? null;
+    }
+
+ 
+    public function setNameAttribute($value)
+    {
+        $this->attributes['nome'] = $value;
     }
 
     public function tipoUtilizador(): BelongsTo
@@ -67,41 +78,32 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Grupo::class, 'criador_id');
     }
 
-    public function grupos()
+    public function grupos(): BelongsToMany
     {
         return $this->belongsToMany(Grupo::class, 'grupo_user')
                     ->withPivot('is_admin')
                     ->withTimestamps();
     }
 
-    /**
-     * Iniciais (até 2 letras) para usar como avatar textual.
-     */
+   
     public function getInitialsAttribute(): string
     {
-        $name = $this->nome ?? $this->attributes['name'] ?? '';
+        $name = $this->attributes['nome'] ?? '';
 
         $initials = '';
         if ($name) {
             $parts = preg_split('/\s+/', trim($name));
             $parts = array_filter($parts);
 
-            $i = 0;
             foreach ($parts as $part) {
                 $initials .= mb_substr($part, 0, 1);
-                $i++;
-                if ($i >= 2) {
-                    break;
-                }
+                if (strlen($initials) >= 2) break;
             }
         }
 
         return strtoupper($initials ?: 'U');
     }
 
-    /**
-     * URL público completo para o avatar (ou null).
-     */
     public function getAvatarUrlPublicAttribute(): ?string
     {
         if (!$this->avatar_url) {

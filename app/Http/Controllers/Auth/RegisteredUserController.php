@@ -9,28 +9,19 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Display the registration view.
-     */
     public function create(): View
     {
         return view('auth.register');
     }
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'nome' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
                 'string',
@@ -43,16 +34,17 @@ class RegisteredUserController extends Controller
                 'required',
                 'confirmed',
                 'min:8',
-                'regex:/[A-Z]/',      // 1 letra maiúscula
-                'regex:/[0-9]/',      // 1 número
-                'regex:/[@$!%*#?&]/', // 1 caractere especial
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[^A-Za-z0-9]/',
             ],
         ], [
-            'password.regex' => 'A password deve conter pelo menos: uma letra maiúscula, um número e um carácter especial.',
+            'password.regex' =>
+                'A password deve conter pelo menos: uma letra maiúscula, um número e um carácter especial.',
         ]);
 
         $user = User::create([
-            'nome' => $request->name,
+            'nome' => $request->nome,   // <-- CORRIGIDO
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);

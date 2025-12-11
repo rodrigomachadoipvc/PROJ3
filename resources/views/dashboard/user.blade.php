@@ -1,10 +1,16 @@
 <x-app-layout>
     <div class="max-w-7xl mx-auto px-6 py-8">
-        
+
+        @php
+            $user = Auth::user();
+            $avatar = $user->avatar_url_public;
+            $initials = $user->initials;
+        @endphp
+
         {{-- Cabeçalho --}}
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">
-                Olá, {{ $user->nome }} 👋
+                Olá, {{ $user->name }} 👋
             </h1>
             <p class="text-gray-600 text-sm mt-1">
                 Bem-vindo ao seu painel. Aqui encontra atalhos e atividade recente.
@@ -28,12 +34,12 @@
                        class="block p-3 mb-2 rounded-lg hover:bg-gray-50 transition border border-gray-200">
 
                         <p class="font-medium text-sm text-gray-800">
-                            {{ $outro?->nome ?? 'Conversa' }}
+                            {{ $outro?->name ?? 'Conversa' }}
                         </p>
 
                         @if ($ultima)
                             <p class="text-xs text-gray-600 mt-1 truncate">
-                                <strong>{{ $ultima->emissor_id == $user->id ? 'Você' : $ultima->emissor?->nome }}:</strong>
+                                <strong>{{ $ultima->emissor_id == $user->id ? 'Você' : $ultima->emissor?->name }}:</strong>
                                 {{ $ultima->conteudo ?? 'Anexo' }}
                             </p>
 
@@ -73,16 +79,18 @@
                 <h2 class="text-lg font-semibold text-gray-800 mb-4">A Sua Conta</h2>
 
                 <div class="flex items-center space-x-4">
-                    @if ($user->avatar_url)
-                        <img src="{{ $user->avatar_url }}" class="w-14 h-14 rounded-full object-cover shadow">
+
+                    {{-- Avatar --}}
+                    @if ($avatar)
+                        <img src="{{ $avatar }}" class="w-14 h-14 rounded-full object-cover shadow">
                     @else
                         <div class="w-14 h-14 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xl font-semibold">
-                            {{ strtoupper(substr($user->nome,0,1)) }}
+                            {{ $initials }}
                         </div>
                     @endif
 
                     <div>
-                        <p class="font-semibold text-gray-800">{{ $user->nome }}</p>
+                        <p class="font-semibold text-gray-800">{{ $user->name }}</p>
                         <p class="text-sm text-gray-500">{{ $user->email }}</p>
 
                         <a href="{{ route('profile.edit') }}"

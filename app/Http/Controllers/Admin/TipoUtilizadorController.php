@@ -36,8 +36,8 @@ class TipoUtilizadorController extends Controller
             abort(403, 'Acesso não autorizado.');
         }
 
-        // 1. Buscar todas as permissões disponíveis (ordenadas por nome)
-        $permissoes = Permissao::orderBy('nome')->get();
+        // 1. Buscar todas as permissões disponíveis (ordenadas por name)
+        $permissoes = Permissao::orderBy('name')->get();
         
         // 2. Passar as permissões para a view
         return view('admin.tipos-utilizadores.create', compact('permissoes'));
@@ -52,7 +52,7 @@ class TipoUtilizadorController extends Controller
 
         // 1. Validação dos dados
         $request->validate([
-            'nome' => ['required', 'string', 'max:255', 'unique:tipos_utilizadores,nome'],
+            'name' => ['required', 'string', 'max:255', 'unique:tipos_utilizadores,name'],
             'descricao' => ['nullable', 'string', 'max:500'],
             'permissoes' => ['nullable', 'array'], // Permissões é um array opcional
             'permissoes.*' => ['exists:permissoes,id'], // Cada item deve existir na tabela 'permissoes'
@@ -60,7 +60,7 @@ class TipoUtilizadorController extends Controller
 
         // 2. Criação do Tipo de Utilizador
         $tipo = TipoUtilizador::create([
-            'nome' => $request->nome,
+            'name' => $request->name,
             'descricao' => $request->descricao,
         ]);
 
@@ -72,7 +72,7 @@ class TipoUtilizadorController extends Controller
 
         // 4. Redirecionar com mensagem de sucesso
         return redirect()->route('admin.tipos-utilizadores.index')
-                         ->with('success', 'Tipo de utilizador "' . $tipo->nome . '" criado e permissões associadas com sucesso!');
+                         ->with('success', 'Tipo de utilizador "' . $tipo->name . '" criado e permissões associadas com sucesso!');
     }
 
     public function edit(string $id) // Recebe ID (string), não o Model
@@ -85,7 +85,7 @@ class TipoUtilizadorController extends Controller
         $tipo = TipoUtilizador::findOrFail($id);
 
         // 2. Obter todas as permissões disponíveis
-        $permissoes = Permissao::orderBy('nome')->get();
+        $permissoes = Permissao::orderBy('name')->get();
 
         // 3. Obter os IDs das permissões atualmente associadas
         $permissoesAtuais = $tipo->permissoes->pluck('id')->toArray();
@@ -105,9 +105,9 @@ class TipoUtilizadorController extends Controller
 
         $tipo = TipoUtilizador::findOrFail($id); // Encontra o Model manualmente
 
-        // 1. Validação dos dados (Excluindo o nome atual para a regra unique)
+        // 1. Validação dos dados (Excluindo o name atual para a regra unique)
         $request->validate([
-            'nome' => ['required', 'string', 'max:255', 'unique:tipos_utilizadores,nome,' . $tipo->id],
+            'name' => ['required', 'string', 'max:255', 'unique:tipos_utilizadores,name,' . $tipo->id],
             'descricao' => ['nullable', 'string', 'max:500'],
             'permissoes' => ['nullable', 'array'],
             'permissoes.*' => ['exists:permissoes,id'],
@@ -115,7 +115,7 @@ class TipoUtilizadorController extends Controller
 
         // 2. Atualização e Sincronização
         $tipo->update([
-            'nome' => $request->nome,
+            'name' => $request->name,
             'descricao' => $request->descricao,
         ]);
         
@@ -124,7 +124,7 @@ class TipoUtilizadorController extends Controller
 
         // 3. Redirecionar com mensagem de sucesso
         return redirect()->route('admin.tipos-utilizadores.index')
-                         ->with('success', 'Tipo de utilizador "' . $tipo->nome . '" atualizado com sucesso!');
+                         ->with('success', 'Tipo de utilizador "' . $tipo->name . '" atualizado com sucesso!');
     }
 
     /**
@@ -140,18 +140,18 @@ class TipoUtilizadorController extends Controller
         $tipo = TipoUtilizador::findOrFail($id); 
 
         // Regra de segurança: Não permitir eliminar o Tipo Administrador
-        if ($tipo->nome === 'Administrador') {
+        if ($tipo->name === 'Administrador') {
             return redirect()->route('admin.tipos-utilizadores.index')
                              ->with('error', 'O Tipo de Utilizador "Administrador" não pode ser eliminado por questões de segurança.');
         }
         
-        $nomeTipo = $tipo->nome;
+        $nameTipo = $tipo->name;
 
         $tipo->permissoes()->detach();
         $tipo->delete();
 
         return redirect()->route('admin.tipos-utilizadores.index')
-                         ->with('success', 'Tipo de utilizador "' . $nomeTipo . '" eliminado com sucesso.');
+                         ->with('success', 'Tipo de utilizador "' . $nameTipo . '" eliminado com sucesso.');
     }
     // ... (restantes métodos: store, show, edit, update, destroy serão implementados)
 }
