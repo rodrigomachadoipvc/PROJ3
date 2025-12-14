@@ -13,11 +13,8 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'nome' => ['required', 'string', 'max:255'],
 
-            // Nome do utilizador
-            'name' => ['required', 'string', 'max:255'],
-
-            // Email do utilizador
             'email' => [
                 'required',
                 'string',
@@ -26,9 +23,12 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique('users')->ignore($this->user()->id),
             ],
 
-            // O avatar é validado apenas quando existe um ficheiro,
-            // no Controller, por isso não é necessário colocá-lo aqui.
-
+            'avatar' => [
+                'nullable',
+                'image',
+                'mimes:jpeg,png,jpg,gif,webp',
+                'max:2048', 
+            ],
         ];
     }
 }

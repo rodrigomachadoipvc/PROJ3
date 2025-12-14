@@ -36,17 +36,54 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    /* =========================
+     | Accessors / Mutators
+     ========================= */
 
-    public function getNameAttribute()
+    public function getNameAttribute(): ?string
     {
         return $this->attributes['nome'] ?? null;
     }
 
- 
-    public function setNameAttribute($value)
+    public function setNameAttribute($value): void
     {
         $this->attributes['nome'] = $value;
     }
+
+    public function getInitialsAttribute(): string
+    {
+        $name = $this->attributes['nome'] ?? '';
+
+        if (!$name) {
+            return 'U';
+        }
+
+        $parts = preg_split('/\s+/', trim($name));
+        $parts = array_filter($parts);
+
+        $initials = '';
+        foreach ($parts as $part) {
+            $initials .= mb_substr($part, 0, 1);
+            if (mb_strlen($initials) === 2) {
+                break;
+            }
+        }
+
+        return strtoupper($initials ?: 'U');
+    }
+
+    public function getAvatarUrlPublicAttribute(): ?string
+    {
+        if (empty($this->attributes['avatar_url'])) {
+            return null;
+        }
+
+        return asset('storage/' . ltrim($this->attributes['avatar_url'], '/'));
+    }
+
+    /* =========================
+     | Relations
+     ========================= */
 
     public function tipoUtilizador(): BelongsTo
     {
@@ -55,17 +92,19 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function hasPermissionTo(string $permissao): bool
     {
-        if (!$this->tipoUtilizador) {
-            return false;
-        }
-
-        return $this->tipoUtilizador->permissoes()->where('nome', $permissao)->exists();
+        return $this->tipoUtilizador
+            ? $this->tipoUtilizador->permissoes()->where('nome', $permissao)->exists()
+            : false;
     }
 
     public function conversasParticipadas(): BelongsToMany
     {
-        return $this->belongsToMany(Conversa::class, 'participantes_conversa', 'utilizador_id', 'conversa_id')
-                    ->withTimestamps('entrou_em', 'saiu_em');
+        return $this->belongsToMany(
+            Conversa::class,
+            'participantes_conversa',
+            'utilizador_id',
+            'conversa_id'
+        )->withTimestamps('entrou_em', 'saiu_em');
     }
 
     public function mensagensEnviadas(): HasMany
@@ -81,35 +120,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function grupos(): BelongsToMany
     {
         return $this->belongsToMany(Grupo::class, 'grupo_user')
-                    ->withPivot('is_admin')
-                    ->withTimestamps();
-    }
-
-   
-    public function getInitialsAttribute(): string
-    {
-        $name = $this->attributes['nome'] ?? '';
-
-        $initials = '';
-        if ($name) {
-            $parts = preg_split('/\s+/', trim($name));
-            $parts = array_filter($parts);
-
-            foreach ($parts as $part) {
-                $initials .= mb_substr($part, 0, 1);
-                if (strlen($initials) >= 2) break;
-            }
-        }
-
-        return strtoupper($initials ?: 'U');
-    }
-
-    public function getAvatarUrlPublicAttribute(): ?string
-    {
-        if (!$this->avatar_url) {
-            return null;
-        }
-
-        return asset('storage/' . $this->avatar_url);
+            ->withPivot('is_admin')
+            ->withTimestamps();
     }
 }
