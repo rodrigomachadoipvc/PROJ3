@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
+use App\Models\TipoUtilizador;
+
 
 class RegisteredUserController extends Controller
 {
@@ -43,10 +45,14 @@ class RegisteredUserController extends Controller
                 'A password deve conter pelo menos: uma letra maiúscula, um número e um carácter especial.',
         ]);
 
+        $tipoUtilizadorDefault = TipoUtilizador::where('nome', 'Utilizador')->first();
+
         $user = User::create([
-            'nome' => $request->nome,   // <-- CORRIGIDO
+            'nome' => $request->nome,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'tipo_utilizador_id' => $tipoUtilizadorDefault?->id,
+            'status' => 'ativo',
         ]);
 
         event(new Registered($user));

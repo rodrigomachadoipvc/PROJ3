@@ -62,9 +62,19 @@ class UtilizadorController extends Controller
         $request->validate([
             'nome' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+                'required',
+                'confirmed',
+                'min:8',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[^A-Za-z0-9]/',
+            ],
             'tipo_utilizador_id' => ['required', 'exists:tipos_utilizadores,id'],
             'status' => ['required', 'in:ativo,inativo'],
+        ], [
+            'password.regex' =>
+                'A password deve conter pelo menos uma letra maiúscula, um número e um carácter especial.',
         ]);
 
         // 2. Criação do Utilizador

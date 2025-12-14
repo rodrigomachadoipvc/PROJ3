@@ -10,7 +10,7 @@
         {{-- Cabeçalho --}}
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">
-                Olá, {{ $user->name }} 👋
+                Olá, {{ $user->name }}
             </h1>
             <p class="text-gray-600 text-sm mt-1">
                 Bem-vindo ao seu painel. Aqui encontra atalhos e atividade recente.
