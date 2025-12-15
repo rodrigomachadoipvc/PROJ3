@@ -23,7 +23,7 @@ class PasswordController extends Controller
                 'min:8',
                 'regex:/[A-Z]/',
                 'regex:/[0-9]/',
-                'regex:/[@$!%*#?&]/',
+                'regex:/[^A-Za-z0-9]/',
             ],
         ], [
             'password.regex' => 'A password deve conter uma letra maiúscula, um número e um carácter especial.',
