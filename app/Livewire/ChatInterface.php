@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Conversa;
+use App\Models\Mensagem;
 use Illuminate\Database\Eloquent\Collection;
+use App\Events\NovaMensagemEnviada;
 
 class ChatInterface extends Component
 {
@@ -18,11 +20,14 @@ class ChatInterface extends Component
     public Collection $outrosUtilizadores;
     public string $novaMensagem = '';
 
+    protected $listeners = [
+        'mensagemRecebidaRealtime' => 'mensagemRecebidaRealtime',
+    ];
+
     public function mount(Request $request): void
     {
         $this->carregarPropriedadesIniciais();
 
-        // Se vier um ID de conversa da sessão (ex.: iniciar DM via controller)
         $conversaAtivaId = $request->session()->get('conversa_ativa_id');
         if ($conversaAtivaId) {
             $this->selecionarConversa($conversaAtivaId);
@@ -36,13 +41,11 @@ class ChatInterface extends Component
 
         $this->mensagens = new Collection();
 
-        // Conversas em que o utilizador participa (DM + grupos, já preparado para grupos)
         $this->conversas = $utilizador->conversasParticipadas()
             ->with(['ultimaMensagem.emissor', 'participantes', 'grupo'])
             ->orderBy('updated_at', 'desc')
             ->get();
 
-        // Lista de outros utilizadores para iniciar DM
         $this->outrosUtilizadores = User::where('id', '!=', $utilizador->id)
             ->orderBy('nome')
             ->get();
@@ -52,10 +55,8 @@ class ChatInterface extends Component
     {
         $utilizador = Auth::user();
 
-        // Primeiro tenta encontrar na coleção já carregada
         $conversa = $this->conversas->firstWhere('id', $conversaId);
 
-        // Se não estiver na coleção (por ex. acabou de ser criada), carrega da BD
         if (! $conversa) {
             $conversa = $utilizador->conversasParticipadas()
                 ->with(['participantes', 'grupo'])
@@ -69,6 +70,11 @@ class ChatInterface extends Component
                 ->with('emissor')
                 ->orderBy('created_at', 'asc')
                 ->get();
+
+            // Diz ao JS para subscrever o canal desta conversa
+            $this->dispatch('conversa-selecionada', conversaId: $this->conversaAtiva->id);
+            // Scroll para o fundo
+            $this->dispatch('scroll-chat-para-fundo');
         } else {
             $this->mensagens = new Collection();
         }
@@ -78,7 +84,6 @@ class ChatInterface extends Component
     {
         $utilizadorAtual = Auth::user();
 
-        // Procura DM existente entre estes 2 utilizadores
         $conversa = $utilizadorAtual->conversasParticipadas()
             ->where('tipo', 'dm')
             ->whereHas('participantes', function ($query) use ($outroUtilizadorId) {
@@ -87,12 +92,10 @@ class ChatInterface extends Component
             ->whereHas('participantes', null, '=', 2)
             ->first();
 
-        // Se não existir, cria uma nova conversa DM
         if (! $conversa) {
             $conversa = Conversa::create(['tipo' => 'dm']);
             $conversa->participantes()->attach([$utilizadorAtual->id, $outroUtilizadorId]);
 
-            // Atualiza a barra lateral com a nova conversa
             $this->recarregarBarraLateral();
         }
 
@@ -107,7 +110,6 @@ class ChatInterface extends Component
             return;
         }
 
-        // Segurança: garantir que o utilizador participa nesta conversa
         $participa = $utilizador->conversasParticipadas()
             ->where('conversas.id', $this->conversaAtiva->id)
             ->exists();
@@ -116,28 +118,69 @@ class ChatInterface extends Component
             abort(403);
         }
 
-        DB::transaction(function () use ($utilizador) {
+        $novaMsg = null;
+
+        DB::transaction(function () use ($utilizador, &$novaMsg) {
             $novaMsg = $this->conversaAtiva->mensagens()->create([
                 'emissor_id' => $utilizador->id,
                 'conteudo'   => $this->novaMensagem,
             ]);
 
-            // Atualizar a referência à última mensagem na conversa
             $this->conversaAtiva->update(['ultima_mensagem_id' => $novaMsg->id]);
         });
 
-        // Recarrega a lista de mensagens para forçar o Livewire a atualizar o DOM
+        // Atualiza UI do remetente (Livewire)
         $this->mensagens = $this->conversaAtiva->mensagens()
             ->with('emissor')
             ->orderBy('created_at', 'asc')
             ->get();
 
-        // Atualiza a barra lateral (última mensagem / timestamps)
         $this->recarregarBarraLateral();
 
-        // Limpa o input
+        // Broadcast para os outros utilizadores (Realtime)
+        // toOthers() evita duplicar no remetente
+        broadcast(new NovaMensagemEnviada($novaMsg))->toOthers();
+
         $this->novaMensagem = '';
         $this->dispatch('limpar-input-chat');
+        $this->dispatch('scroll-chat-para-fundo');
+    }
+
+    /**
+     * Recebe uma mensagem do Realtime (vinda do JS/Echo)
+     */
+    public function mensagemRecebidaRealtime(array $payload): void
+    {
+        if (! $this->conversaAtiva) {
+            return;
+        }
+
+        $mensagem = $payload['mensagem'] ?? null;
+        if (! $mensagem) {
+            return;
+        }
+
+        // Só interessa se for da conversa aberta
+        if ((int)($mensagem['conversa_id'] ?? 0) !== (int)$this->conversaAtiva->id) {
+            // Mesmo assim, convém atualizar a barra lateral (última mensagem)
+            $this->recarregarBarraLateral();
+            return;
+        }
+
+        // Evitar duplicados
+        $existe = $this->mensagens->firstWhere('id', $mensagem['id'] ?? null);
+        if ($existe) {
+            return;
+        }
+
+        // Recarregar mensagens com relações (mais seguro do que “inventar” modelo aqui)
+        $this->mensagens = $this->conversaAtiva->mensagens()
+            ->with('emissor')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $this->recarregarBarraLateral();
+        $this->dispatch('scroll-chat-para-fundo');
     }
 
     public function recarregarBarraLateral(): void

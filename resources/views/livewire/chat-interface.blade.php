@@ -264,3 +264,45 @@
         </main>
     </div>
 </div>
+<script>
+    (function () {
+        let currentSubscription = null;
+
+        function subscribeToConversa(conversaId) {
+            if (!conversaId || !window.Echo) return;
+
+            // Sair do canal anterior
+            if (currentSubscription) {
+                try { window.Echo.leave(currentSubscription); } catch (e) {}
+                currentSubscription = null;
+            }
+
+            const channelName = `private-conversa.${conversaId}`;
+            currentSubscription = `conversa.${conversaId}`;
+
+            window.Echo.private(`conversa.${conversaId}`)
+                .listen('.mensagem.nova', (e) => {
+                    // Envia o payload para Livewire atualizar sem refresh
+                    if (window.Livewire) {
+                        window.Livewire.dispatch('mensagemRecebidaRealtime', e);
+                    }
+                });
+        }
+
+        // Quando o Livewire muda a conversa ativa
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('conversa-selecionada', (data) => {
+                subscribeToConversa(data.conversaId);
+            });
+
+            Livewire.on('scroll-chat-para-fundo', () => {
+                const container = document.querySelector('main .overflow-y-auto');
+                if (container) container.scrollTop = container.scrollHeight;
+            });
+
+            Livewire.on('limpar-input-chat', () => {
+                // opcional: o wire:model já limpa, mas mantém UX suave
+            });
+        });
+    })();
+</script>
