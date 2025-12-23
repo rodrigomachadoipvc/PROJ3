@@ -8,6 +8,9 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\UserDashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Gate;
+use App\Models\Anexo;
 
 /*
 |--------------------------------------------------------------------------
@@ -80,6 +83,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
     */
     Route::get('/chat', [ChatController::class, 'index'])
         ->name('chat.index');
+
+    Route::get('/anexos/{anexo}', function (Anexo $anexo) {
+
+        Gate::authorize('view', $anexo);
+
+        if (! Storage::disk('public')->exists($anexo->caminho_storage)) {
+            abort(404);
+        }
+
+        // Imagens: mostrar inline (serve para <img src="...">)
+        if (str_starts_with($anexo->mime_type, 'image/')) {
+            $path = Storage::disk('public')->path($anexo->caminho_storage);
+
+            return response()->file($path, [
+                'Content-Type' => $anexo->mime_type,
+                'Content-Disposition' => 'inline; filename="' . $anexo->nome_original . '"',
+            ]);
+        }
+
+        // Outros: força download
+        return Storage::disk('public')->download(
+            $anexo->caminho_storage,
+            $anexo->nome_original
+        );
+
+    })->name('anexos.ver');
 });
 
 

@@ -160,7 +160,51 @@
                                 <div class="flex items-start justify-end mt-4 space-x-3">
                                     <div class="max-w-lg">
                                         <div class="bg-blue-100 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
-                                            <p class="text-sm break-words">{{ $mensagem->conteudo }}</p>
+                                            @if (!empty($mensagem->conteudo))
+                                                <p class="text-sm break-words">
+                                                    {{ $mensagem->conteudo }}
+                                                </p>
+                                            @endif
+                                            {{-- Anexos --}}
+                                            @if ($mensagem->anexos && $mensagem->anexos->count())
+                                                <div class="mt-2 space-y-2">
+                                                    @foreach ($mensagem->anexos as $anexo)
+
+                                                        @php
+                                                            $isImage = str_starts_with($anexo->mime_type, 'image/');
+                                                            $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
+                                                        @endphp
+
+                                                        @if ($isImage)
+                                                            {{-- Preview de imagem --}}
+                                                            <a href="{{ route('anexos.ver', $anexo) }}"
+                                                            target="_blank"
+                                                            class="inline-block">
+                                                                <img src="{{ route('anexos.ver', $anexo) }}"
+                                                                    alt="{{ $anexo->nome_original }}"
+                                                                    class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
+                                                            </a>
+
+                                                        @else
+                                                            {{-- Documento / ficheiro --}}
+                                                            <div class="flex items-center justify-between
+                                                                        bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                                                                <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
+                                                                    <span>📎</span>
+                                                                    <span class="truncate">{{ $anexo->nome_original }}</span>
+                                                                    <span class="text-gray-400">({{ $sizeMb }} MB)</span>
+                                                                </div>
+
+                                                                <a href="{{ route('anexos.ver', $anexo) }}"
+                                                                target="_blank"
+                                                                class="text-indigo-600 hover:underline text-xs">
+                                                                    Download
+                                                                </a>
+                                                            </div>
+                                                        @endif
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                             <div class="mt-1 text-[11px] text-gray-600 flex justify-end">
                                                 <span>{{ $mensagem->created_at->format('H:i') }}</span>
                                             </div>
@@ -195,7 +239,52 @@
                                     <div class="max-w-lg">
                                         <div class="bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
                                             <p class="text-xs font-semibold text-gray-700 mb-1">{{ $sender->nome }}</p>
-                                            <p class="text-sm break-words">{{ $mensagem->conteudo }}</p>
+                                            @if (!empty($mensagem->conteudo))
+                                                <p class="text-sm break-words">
+                                                    {{ $mensagem->conteudo }}
+                                                </p>
+                                            @endif
+                                            {{-- Anexos --}}
+                                            @if ($mensagem->anexos && $mensagem->anexos->count())
+                                                <div class="mt-2 space-y-2">
+                                                    @foreach ($mensagem->anexos as $anexo)
+
+                                                        @php
+                                                            $isImage = str_starts_with($anexo->mime_type, 'image/');
+                                                            $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
+                                                        @endphp
+
+                                                        @if ($isImage)
+                                                            {{-- Preview de imagem --}}
+                                                            <a href="{{ route('anexos.ver', $anexo) }}"
+                                                            target="_blank"
+                                                            class="inline-block">
+                                                                <img src="{{ route('anexos.ver', $anexo) }}"
+                                                                    alt="{{ $anexo->nome_original }}"
+                                                                    class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
+                                                            </a>
+
+                                                        @else
+                                                            {{-- Documento / ficheiro --}}
+                                                            <div class="flex items-center justify-between
+                                                                        bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                                                                <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
+                                                                    <span>📎</span>
+                                                                    <span class="truncate">{{ $anexo->nome_original }}</span>
+                                                                    <span class="text-gray-400">({{ $sizeMb }} MB)</span>
+                                                                </div>
+
+                                                                <a href="{{ route('anexos.ver', $anexo) }}"
+                                                                target="_blank"
+                                                                class="text-indigo-600 hover:underline text-xs">
+                                                                    Download
+                                                                </a>
+                                                            </div>
+                                                        @endif
+
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                             <div class="mt-1 text-[11px] text-gray-500 flex justify-end">
                                                 <span>{{ $mensagem->created_at->format('H:i') }}</span>
                                             </div>
@@ -210,7 +299,51 @@
                                 <div class="flex justify-end mt-1">
                                     <div class="max-w-lg mr-10">
                                         <div class="bg-blue-100 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
-                                            <p class="text-sm break-words">{{ $mensagem->conteudo }}</p>
+                                            @if (!empty($mensagem->conteudo))
+                                                <p class="text-sm break-words">
+                                                    {{ $mensagem->conteudo }}
+                                                </p>
+                                            @endif
+                                            {{-- Anexos --}}
+                                            @if ($mensagem->anexos && $mensagem->anexos->count())
+                                                <div class="mt-2 space-y-2">
+                                                    @foreach ($mensagem->anexos as $anexo)
+
+                                                        @php
+                                                            $isImage = str_starts_with($anexo->mime_type, 'image/');
+                                                            $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
+                                                        @endphp
+
+                                                        @if ($isImage)
+                                                            {{-- Preview de imagem --}}
+                                                            <a href="{{ route('anexos.ver', $anexo) }}"
+                                                            target="_blank"
+                                                            class="inline-block">
+                                                                <img src="{{ route('anexos.ver', $anexo) }}"
+                                                                    alt="{{ $anexo->nome_original }}"
+                                                                    class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
+                                                            </a>
+
+                                                        @else
+                                                            {{-- Documento / ficheiro --}}
+                                                            <div class="flex items-center justify-between
+                                                                        bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                                                                <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
+                                                                    <span>📎</span>
+                                                                    <span class="truncate">{{ $anexo->nome_original }}</span>
+                                                                    <span class="text-gray-400">({{ $sizeMb }} MB)</span>
+                                                                </div>
+
+                                                                <a href="{{ route('anexos.ver', $anexo) }}"
+                                                                target="_blank"
+                                                                class="text-indigo-600 hover:underline text-xs">
+                                                                    Download
+                                                                </a>
+                                                            </div>
+                                                        @endif
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                             <div class="mt-1 text-[11px] text-gray-600 flex justify-end">
                                                 <span>{{ $mensagem->created_at->format('H:i') }}</span>
                                             </div>
@@ -221,7 +354,52 @@
                                 <div class="flex justify-start mt-1">
                                     <div class="max-w-lg ml-10">
                                         <div class="bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
-                                            <p class="text-sm break-words">{{ $mensagem->conteudo }}</p>
+                                            @if (!empty($mensagem->conteudo))
+                                                <p class="text-sm break-words">
+                                                    {{ $mensagem->conteudo }}
+                                                </p>
+                                            @endif
+                                            {{-- Anexos --}}
+                                            @if ($mensagem->anexos && $mensagem->anexos->count())
+                                                <div class="mt-2 space-y-2">
+                                                    @foreach ($mensagem->anexos as $anexo)
+
+                                                        @php
+                                                            $isImage = str_starts_with($anexo->mime_type, 'image/');
+                                                            $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
+                                                        @endphp
+
+                                                        @if ($isImage)
+                                                            {{-- Preview de imagem --}}
+                                                            <a href="{{ route('anexos.ver', $anexo) }}"
+                                                            target="_blank"
+                                                            class="inline-block">
+                                                                <img src="{{ route('anexos.ver', $anexo) }}"
+                                                                    alt="{{ $anexo->nome_original }}"
+                                                                    class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
+                                                            </a>
+
+                                                        @else
+                                                            {{-- Documento / ficheiro --}}
+                                                            <div class="flex items-center justify-between
+                                                                        bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                                                                <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
+                                                                    <span>📎</span>
+                                                                    <span class="truncate">{{ $anexo->nome_original }}</span>
+                                                                    <span class="text-gray-400">({{ $sizeMb }} MB)</span>
+                                                                </div>
+
+                                                                <a href="{{ route('anexos.ver', $anexo) }}"
+                                                                target="_blank"
+                                                                class="text-indigo-600 hover:underline text-xs">
+                                                                    Download
+                                                                </a>
+                                                            </div>
+                                                        @endif
+
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                             <div class="mt-1 text-[11px] text-gray-500 flex justify-end">
                                                 <span>{{ $mensagem->created_at->format('H:i') }}</span>
                                             </div>
@@ -245,6 +423,20 @@
                 @if ($conversaAtiva)
                     <form wire:submit="enviarMensagem" class="flex items-center space-x-3">
                         @csrf
+                        <!-- Botão de anexos -->
+                        <label class="cursor-pointer flex items-center justify-center
+                                    w-9 h-9 rounded-md bg-white border border-gray-300
+                                    hover:bg-gray-50">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L6.343 10.172a6 6 0 108.485 8.485L20 13"/>
+                            </svg>
+
+                            <input type="file"
+                                class="hidden"
+                                multiple
+                                wire:model="uploads">
+                        </label>
 
                         <input type="text"
                                wire:model.defer="novaMensagem"
@@ -253,10 +445,52 @@
                                autocomplete="off">
 
                         <button type="submit"
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">
-                            Enviar
+                                wire:loading.attr="disabled"
+                                wire:target="uploads,enviarMensagem"
+                                class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50
+                                    text-white font-bold py-2 px-4 rounded text-sm">
+                            <span wire:loading.remove wire:target="enviarMensagem">
+                                Enviar
+                            </span>
+                            <span wire:loading wire:target="enviarMensagem">
+                                A enviar…
+                            </span>
                         </button>
                     </form>
+                    @if (!empty($uploads))
+                        <div class="mt-2 bg-white border border-gray-200 rounded-md p-2">
+                            <p class="text-xs text-gray-600 font-semibold mb-1">
+                                Ficheiros selecionados ({{ count($uploads) }}):
+                            </p>
+
+                            <ul class="space-y-1">
+                                @foreach ($uploads as $i => $file)
+                                    <li class="flex items-center justify-between text-xs text-gray-700">
+                                        <span class="truncate">
+                                            📎 {{ $file->getClientOriginalName() }}
+                                            <span class="text-gray-400">
+                                                ({{ number_format($file->getSize() / 1024 / 1024, 2) }} MB)
+                                            </span>
+                                        </span>
+
+                                        <button type="button"
+                                                wire:click="removerUpload({{ $i }})"
+                                                class="text-red-500 hover:text-red-700 text-xs ml-2">
+                                            Remover
+                                        </button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    @error('uploads')
+                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+
+                    @error('uploads.*')
+                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+
                 @else
                     <p class="text-center text-gray-500 text-sm italic">Selecione uma conversa.</p>
                 @endif
