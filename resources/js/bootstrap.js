@@ -1,3 +1,7 @@
+console.log('BOOTSTRAP CARREGADO');
+
+window.Echo = { teste: 'FUNCIONA' };
+
 import axios from 'axios';
 window.axios = axios;
 
