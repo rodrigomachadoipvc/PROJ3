@@ -3,17 +3,48 @@
     <!-- Cabeçalho -->
     <header class="bg-white shadow sticky top-0 z-10">
         <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <div class="flex items-center space-x-3">
                 @if ($conversaAtiva)
-                    @if ($conversaAtiva->tipo === 'dm')
-                        {{ $conversaAtiva->participantes->where('id', '!=', Auth::id())->first()?->nome ?? 'Conversa DM' }}
+                    @php
+                        $avatar = null;
+                        $label  = null;
+
+                        if ($conversaAtiva->tipo === 'dm') {
+                            $outro  = $conversaAtiva->participantes->where('id', '!=', Auth::id())->first();
+                            $avatar = $outro?->avatar_url_public;
+                            $label  = $outro?->nome ?? 'Conversa DM';
+                        } else {
+                            $label = $conversaAtiva->grupo?->nome ?? 'Grupo';
+                        }
+                    @endphp
+
+                    @if ($avatar)
+                        <img src="{{ $avatar }}" class="w-9 h-9 rounded-full object-cover">
                     @else
-                        {{ $conversaAtiva->nome ?? $conversaAtiva->grupo?->nome ?? 'Grupo' }}
+                        <div class="w-9 h-9 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold">
+                            {{ strtoupper(mb_substr($label, 0, 2)) }}
+                        </div>
                     @endif
+
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                        {{ $label }}
+                    </h2>
                 @else
-                    Communico Chat
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                        Communico Chat
+                    </h2>
                 @endif
-            </h2>
+            </div>
+
+            @if ($conversaAtiva && $conversaAtiva->tipo === 'grupo')
+                <button
+                    wire:click="toggleMembrosGrupo"
+                    class="text-sm text-gray-600 hover:text-indigo-600 flex items-center space-x-1"
+                >
+                    <span>👥</span>
+                    <span>Membros</span>
+                </button>
+            @endif
         </div>
     </header>
 
@@ -125,7 +156,7 @@
         </aside>
 
         <!-- Área das Mensagens -->
-        <main class="w-3/4 flex flex-col">
+        <section class="flex flex-col flex-1">
             <div class="flex-grow bg-white p-6 overflow-y-auto">
 
                 @php
@@ -419,6 +450,11 @@
                 @endif
             </div>
 
+
+            
+
+
+
             <!-- Caixa de envio -->
             <div class="bg-gray-100 p-4 border-t border-gray-200">
                 @if ($conversaAtiva)
@@ -496,7 +532,43 @@
                     <p class="text-center text-gray-500 text-sm italic">Selecione uma conversa.</p>
                 @endif
             </div>
-        </main>
+        </section>
+
+        {{-- Sidebar direita — Membros do grupo --}}
+            @if ($mostrarMembrosGrupo && $membrosGrupo)
+                <aside class="w-64 bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                        Membros do Grupo ({{ $membrosGrupo->count() }})
+                    </h3>
+
+                    <ul class="space-y-2">
+                        @foreach ($membrosGrupo as $membro)
+                            <li class="flex items-center space-x-2">
+                                @if ($membro->avatar_url_public)
+                                    <img src="{{ $membro->avatar_url_public }}"
+                                        class="w-7 h-7 rounded-full object-cover">
+                                @else
+                                    <div class="w-7 h-7 rounded-full bg-gray-400 text-white flex items-center justify-center text-xs">
+                                        {{ strtoupper(mb_substr($membro->nome, 0, 2)) }}
+                                    </div>
+                                @endif
+
+                                <span class="text-sm text-gray-800 flex-1">
+                                    {{ $membro->nome }}
+                                </span>
+
+                                @if ($membro->pivot->is_admin ?? false)
+                                    <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">
+                                        Admin
+                                    </span>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                </aside>
+            @endif
+
+
     </div>
 </div>
 <script>

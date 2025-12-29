@@ -24,6 +24,11 @@ class ChatInterface extends Component
     public Collection $mensagens;
     public Collection $conversas;
     public Collection $outrosUtilizadores;
+    
+    public bool $mostrarMembrosGrupo = false;
+    public ?Collection $membrosGrupo = null;
+
+
     protected $listeners = [
         'mensagemRecebidaRealtime' => 'onMensagemRecebidaRealtime',
     ];
@@ -91,6 +96,9 @@ class ChatInterface extends Component
         $this->novaMensagem = '';
         $this->uploads = [];
         $this->dispatch('reset-upload-input');
+
+        $this->mostrarMembrosGrupo = false;
+        $this->membrosGrupo = null;
     }
 
     public function iniciarConversaDM(int $outroUtilizadorId): void
@@ -298,6 +306,30 @@ class ChatInterface extends Component
         $this->mensagens->push($mensagem);
 
         $this->dispatch('scroll-chat-para-fundo');
+    }
+
+
+    public function toggleMembrosGrupo(): void
+    {
+        $this->mostrarMembrosGrupo = ! $this->mostrarMembrosGrupo;
+
+        if ($this->mostrarMembrosGrupo) {
+            $this->carregarMembrosGrupo();
+        }
+    }
+
+    protected function carregarMembrosGrupo(): void
+    {
+        if (! $this->conversaAtiva || $this->conversaAtiva->tipo !== 'grupo') {
+            $this->membrosGrupo = null;
+            return;
+        }
+
+        $this->membrosGrupo = $this->conversaAtiva
+            ->grupo
+            ?->membros()
+            ->orderBy('nome')
+            ->get();
     }
 
 
