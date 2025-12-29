@@ -24,6 +24,10 @@ class ChatInterface extends Component
     public Collection $mensagens;
     public Collection $conversas;
     public Collection $outrosUtilizadores;
+    protected $listeners = [
+        'mensagemRecebidaRealtime' => 'onMensagemRecebidaRealtime',
+    ];
+
 
     public string $novaMensagem = '';
 
@@ -196,6 +200,9 @@ class ChatInterface extends Component
                 'conteudo'   => $temTexto ? $this->novaMensagem : null,
             ]);
 
+            app(\App\Services\AutoReplyService::class)
+                ->handle($novaMsg);
+
             // Guardar anexos (se existirem)
             if (!empty($this->uploads)) {
                 foreach ($this->uploads as $file) {
@@ -266,6 +273,33 @@ class ChatInterface extends Component
             ->orderBy('updated_at', 'desc')
             ->get();
     }
+
+    public function onMensagemRecebidaRealtime(array $payload): void
+    {
+        // Ignorar mensagens criadas localmente
+        if (
+            $payload['emissor_id'] === auth()->id() ||
+            ($payload['emissor']['is_system'] ?? false)
+        ) {
+            return;
+        }
+
+        // Evitar duplicação por segurança
+        if ($this->mensagens->contains('id', $payload['id'])) {
+            return;
+        }
+
+        $mensagem = Mensagem::with(['emissor', 'anexos'])->find($payload['id']);
+
+        if (! $mensagem) {
+            return;
+        }
+
+        $this->mensagens->push($mensagem);
+
+        $this->dispatch('scroll-chat-para-fundo');
+    }
+
 
     public function render()
     {

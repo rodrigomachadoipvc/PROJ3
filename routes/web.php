@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\UtilizadorController;
 use App\Http\Controllers\Admin\GrupoController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\UserDashboardController;
+use App\Http\Controllers\Admin\AutoReplyController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -168,4 +169,8 @@ Route::middleware(['auth', 'verified'])
                 ->select('users.id', 'users.nome', 'users.email')
                 ->get();
         })->name('grupos.membros.json');
+
+        Route::resource('auto-replies', AutoReplyController::class)
+            ->except(['show']);
+
     });

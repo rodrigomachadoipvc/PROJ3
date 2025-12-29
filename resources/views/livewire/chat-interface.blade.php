@@ -415,6 +415,7 @@
 
                 @else
                     <p class="text-center text-gray-500 text-sm italic">Selecione uma conversa para ver as mensagens.</p>
+                    <p class="text-center text-gray-500 text-sm italic">Caso tenha alguma dúvida mande, em qualquer dm ou grupo, @sistema e mostrará todas as ajudas! </p>
                 @endif
             </div>
 

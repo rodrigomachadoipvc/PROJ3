@@ -12,7 +12,7 @@
                     <h3 class="text-lg font-bold mb-4">{{ __('Bem-vindo, Administrador!') }}</h3>
                     <p class="mb-4">{{ __('A partir daqui pode gerir todos os aspetos do sistema de chat interno.') }}</p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div class="bg-gray-100 p-4 rounded-lg shadow hover:bg-gray-200 transition">
                             <h4 class="font-bold text-lg mb-2">{{ __('Tipos de Utilizador & Permissões') }}</h4>
                             <p class="text-sm text-gray-600">{{ __('Gerir as funções (Administrador, Gestor, Colaborador) e as suas permissões de acesso.') }}</p>
@@ -30,8 +30,17 @@
                             <p class="text-sm text-gray-600">{{ __('Configurar e gerir grupos de chat internos.') }}</p>
                             <a href="{{ route('admin.grupos.index') }}" class="mt-3 inline-block text-indigo-600 hover:text-indigo-800 font-semibold text-sm">{{ __('Gerir Grupos') }} &rarr;</a>
                         </div>
+                        <div class="bg-gray-100 p-4 rounded-lg shadow hover:bg-gray-200 transition">
+                            <h4 class="font-bold text-lg mb-2">{{ __('Respostas Automáticas') }}</h4>
+                            <p class="text-sm text-gray-600">
+                                {{ __('Gerir respostas automáticas baseadas em regras para o chat interno.') }}
+                            </p>
+                            <a href="{{ route('admin.auto-replies.index') }}"
+                            class="mt-3 inline-block text-indigo-600 hover:text-indigo-800 font-semibold text-sm">
+                                {{ __('Gerir Respostas') }} &rarr;
+                            </a>
+                        </div>
                     </div>
-
                 </div>
             </div>
         </div>
