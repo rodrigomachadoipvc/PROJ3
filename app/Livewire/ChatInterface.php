@@ -28,23 +28,24 @@ class ChatInterface extends Component
     public bool $mostrarMembrosGrupo = false;
     public ?Collection $membrosGrupo = null;
 
+    public bool $mostrarNovaConversa = false;
+    public string $searchUser = '';
+    public Collection $utilizadoresFiltrados;
+
+    public string $searchConversa = '';
+
+    // Novo: Filtro de conversas (Todos / Grupos / Favoritos)
+    public string $filtroConversas = 'todas'; // 'todas' | 'grupos' | 'favoritos'
 
     protected $listeners = [
         'mensagemRecebidaRealtime' => 'onMensagemRecebidaRealtime',
     ];
 
-
-    public string $novaMensagem = '';
-
-    /**
-     * Uploads (múltiplos)
-     * @var array<int, \Livewire\Features\SupportFileUploads\TemporaryUploadedFile>
-     */
-    public array $uploads = [];
-
     public function mount(Request $request): void
     {
+        $this->filtroConversas = 'todas'; // Default
         $this->carregarPropriedadesIniciais();
+        $this->utilizadoresFiltrados = new Collection();
 
         $conversaAtivaId = $request->session()->get('conversa_ativa_id');
         if ($conversaAtivaId) {
@@ -52,6 +53,9 @@ class ChatInterface extends Component
             $request->session()->forget('conversa_ativa_id');
         }
     }
+
+    public string $novaMensagem = '';
+    public array $uploads = [];
 
     protected function carregarPropriedadesIniciais(): void
     {
@@ -61,6 +65,12 @@ class ChatInterface extends Component
 
         $this->conversas = $utilizador->conversasParticipadas()
             ->with(['ultimaMensagem.emissor', 'participantes', 'grupo'])
+            ->withCount([
+                'pins as is_pinned' => function ($q) {
+                    $q->where('user_id', auth()->id());
+                }
+            ])
+            ->orderByDesc('is_pinned')
             ->orderBy('updated_at', 'desc')
             ->get();
 
@@ -99,6 +109,9 @@ class ChatInterface extends Component
 
         $this->mostrarMembrosGrupo = false;
         $this->membrosGrupo = null;
+
+        // ✅ Manter conversa ativa após refresh
+        session()->put('conversa_ativa_id', $conversaId);
     }
 
     public function iniciarConversaDM(int $outroUtilizadorId): void
@@ -116,41 +129,38 @@ class ChatInterface extends Component
         if (! $conversa) {
             $conversa = Conversa::create(['tipo' => 'dm']);
             $conversa->participantes()->attach([$utilizadorAtual->id, $outroUtilizadorId]);
+            $this->fecharNovaConversa();
             $this->recarregarBarraLateral();
         }
 
         $this->selecionarConversa($conversa->id);
     }
 
-    /**
-     * Validação dos uploads (ao escolher ficheiros)
-     */
- public function updatedUploads(): void
-{
-    $this->validate([
-        'uploads' => ['array', 'max:5'], // até 5 ficheiros
-        'uploads.*' => [
-            'file',
-            'max:10240', // 10MB por ficheiro (em KB)
-            // robusto por extensão (mimetypes em rar/zip varia muito)
-            'mimes:jpg,jpeg,png,webp,pdf,zip,rar',
-        ],
-    ], [
-        'uploads.max' => 'Máximo de 5 anexos por mensagem.',
-        'uploads.*.max' => 'Um dos ficheiros excede 10MB.',
-        'uploads.*.mimes' => 'Tipo de ficheiro não permitido.',
-    ]);
+    public function updatedUploads(): void
+    {
+        $this->validate([
+            'uploads' => ['array', 'max:5'],
+            'uploads.*' => [
+                'file',
+                'max:10240',
+                'mimes:jpg,jpeg,png,webp,pdf,zip,rar',
+            ],
+        ], [
+            'uploads.max' => 'Máximo de 5 anexos por mensagem.',
+            'uploads.*.max' => 'Um dos ficheiros excede 10MB.',
+            'uploads.*.mimes' => 'Tipo de ficheiro não permitido.',
+        ]);
 
-    // Limite total por mensagem: 25MB
-    $totalBytes = 0;
-    foreach ($this->uploads as $file) {
-        $totalBytes += (int) $file->getSize();
+        $totalBytes = 0;
+        foreach ($this->uploads as $file) {
+            $totalBytes += (int) $file->getSize();
+        }
+
+        if ($totalBytes > 25 * 1024 * 1024) {
+            $this->addError('uploads', 'O total de anexos por mensagem não pode exceder 25MB.');
+        }
     }
 
-    if ($totalBytes > 25 * 1024 * 1024) {
-        $this->addError('uploads', 'O total de anexos por mensagem não pode exceder 25MB.');
-    }
-}
     public function enviarMensagem(): void
     {
         $utilizador = Auth::user();
@@ -162,12 +172,10 @@ class ChatInterface extends Component
         $temTexto = trim($this->novaMensagem) !== '';
         $temUploads = !empty($this->uploads);
 
-        // Permitir enviar só anexos (sem texto)
         if (! $temTexto && ! $temUploads) {
             return;
         }
 
-        // Segurança: garantir que o utilizador participa nesta conversa
         $participa = $utilizador->conversasParticipadas()
             ->where('conversas.id', $this->conversaAtiva->id)
             ->exists();
@@ -176,21 +184,15 @@ class ChatInterface extends Component
             abort(403);
         }
 
-        // Validar novamente antes de persistir
         $this->validate([
             'uploads' => ['array', 'max:5'],
             'uploads.*' => [
                 'file',
-                'max:10240', // 10MB por ficheiro
+                'max:10240',
                 'mimes:jpg,jpeg,png,webp,pdf,zip,rar',
             ],
-        ], [
-            'uploads.max' => 'Máximo de 5 anexos por mensagem.',
-            'uploads.*.max' => 'Um dos ficheiros excede 10MB.',
-            'uploads.*.mimes' => 'Tipo de ficheiro não permitido.',
         ]);
 
-        // Limite total por mensagem: 25MB
         $totalBytes = 0;
         foreach ($this->uploads as $file) {
             $totalBytes += (int) $file->getSize();
@@ -201,30 +203,20 @@ class ChatInterface extends Component
         }
 
         DB::transaction(function () use ($utilizador, $temTexto) {
-
-            /** @var Mensagem $novaMsg */
             $novaMsg = $this->conversaAtiva->mensagens()->create([
                 'emissor_id' => $utilizador->id,
                 'conteudo'   => $temTexto ? $this->novaMensagem : null,
             ]);
 
-            app(\App\Services\AutoReplyService::class)
-                ->handle($novaMsg);
+            app(\App\Services\AutoReplyService::class)->handle($novaMsg);
 
-            // Guardar anexos (se existirem)
             if (!empty($this->uploads)) {
                 foreach ($this->uploads as $file) {
-
                     $original = $file->getClientOriginalName();
                     $ext = strtolower($file->getClientOriginalExtension() ?: 'bin');
-
-                    // Nome seguro e único (contrato: UUID + extensão)
                     $filename = (string) Str::uuid() . '.' . $ext;
-
-                    // Contrato: storage/app/public/anexos/conversas/{conversa_id}/
                     $path = "anexos/conversas/{$this->conversaAtiva->id}/{$filename}";
 
-                    // Disk public -> /storage/...
                     Storage::disk('public')->putFileAs(
                         dirname($path),
                         $file,
@@ -240,11 +232,9 @@ class ChatInterface extends Component
                 }
             }
 
-            // Atualiza a referência à última mensagem na conversa
             $this->conversaAtiva->update(['ultima_mensagem_id' => $novaMsg->id]);
         });
 
-        // Recarrega mensagens (com anexos)
         $this->mensagens = $this->conversaAtiva->mensagens()
             ->with(['emissor', 'anexos'])
             ->orderBy('created_at', 'asc')
@@ -252,7 +242,6 @@ class ChatInterface extends Component
 
         $this->recarregarBarraLateral();
 
-        // Limpa inputs
         $this->novaMensagem = '';
         $this->uploads = [];
         $this->dispatch('reset-upload-input');
@@ -267,24 +256,65 @@ class ChatInterface extends Component
         }
 
         unset($this->uploads[$index]);
-
-        // Reindexar o array para evitar buracos
         $this->uploads = array_values($this->uploads);
     }
 
     public function recarregarBarraLateral(): void
     {
         $utilizador = Auth::user();
+        $termo = trim($this->searchConversa);
 
-        $this->conversas = $utilizador->conversasParticipadas()
+        $query = $utilizador->conversasParticipadas()
             ->with(['ultimaMensagem.emissor', 'participantes', 'grupo'])
+            ->withCount([
+                'pins as is_pinned' => function ($q) {
+                    $q->where('user_id', auth()->id());
+                }
+            ]);
+
+        if ($termo !== '') {
+            $query->where(function ($q) use ($termo) {
+                $q->whereHas('grupo', function ($q2) use ($termo) {
+                    $q2->where('nome', 'like', "%{$termo}%");
+                });
+
+                $q->orWhereHas('participantes', function ($q2) use ($termo) {
+                    $q2->where('nome', 'like', "%{$termo}%");
+                });
+
+                $q->orWhereHas('mensagens', function ($q2) use ($termo) {
+                    $q2->whereNotNull('conteudo')
+                        ->where('conteudo', 'like', "%{$termo}%");
+                });
+            });
+        }
+
+        // Aplicar filtro WhatsApp-style
+        if ($this->filtroConversas === 'grupos') {
+            $query->where('tipo', 'grupo');
+        }
+
+        if ($this->filtroConversas === 'favoritos') {
+            $query->whereHas('pins', function ($q) {
+                $q->where('user_id', auth()->id());
+            });
+        }
+
+        $this->conversas = $query
+            ->orderByDesc('is_pinned')
             ->orderBy('updated_at', 'desc')
             ->get();
     }
 
+    public function setFiltroConversas(string $filtro): void
+    {
+        $permitidos = ['todas', 'grupos', 'favoritos'];
+        $this->filtroConversas = in_array($filtro, $permitidos, true) ? $filtro : 'todas';
+        $this->recarregarBarraLateral();
+    }
+
     public function onMensagemRecebidaRealtime(array $payload): void
     {
-        // Ignorar mensagens criadas localmente
         if (
             $payload['emissor_id'] === auth()->id() ||
             ($payload['emissor']['is_system'] ?? false)
@@ -292,7 +322,6 @@ class ChatInterface extends Component
             return;
         }
 
-        // Evitar duplicação por segurança
         if ($this->mensagens->contains('id', $payload['id'])) {
             return;
         }
@@ -304,10 +333,8 @@ class ChatInterface extends Component
         }
 
         $this->mensagens->push($mensagem);
-
         $this->dispatch('scroll-chat-para-fundo');
     }
-
 
     public function toggleMembrosGrupo(): void
     {
@@ -332,6 +359,68 @@ class ChatInterface extends Component
             ->get();
     }
 
+    public function togglePin(int $conversaId): void
+    {
+        $userId = auth()->id();
+
+        $existe = \App\Models\ConversaPin::where('user_id', $userId)
+            ->where('conversa_id', $conversaId)
+            ->exists();
+
+        if ($existe) {
+            \App\Models\ConversaPin::where('user_id', $userId)
+                ->where('conversa_id', $conversaId)
+                ->delete();
+        } else {
+            \App\Models\ConversaPin::create([
+                'user_id' => $userId,
+                'conversa_id' => $conversaId,
+            ]);
+        }
+
+        $this->recarregarBarraLateral();
+    }
+
+    public function abrirNovaConversa(): void
+    {
+        $this->mostrarNovaConversa = true;
+        $this->searchUser = '';
+        $this->carregarUtilizadoresParaNovaConversa();
+    }
+
+    public function fecharNovaConversa(): void
+    {
+        $this->mostrarNovaConversa = false;
+        $this->searchUser = '';
+        $this->utilizadoresFiltrados = new Collection();
+    }
+
+    public function updatedSearchUser(): void
+    {
+        if (!$this->mostrarNovaConversa) return;
+        $this->carregarUtilizadoresParaNovaConversa();
+    }
+
+    protected function carregarUtilizadoresParaNovaConversa(): void
+    {
+        $me = auth()->id();
+        $termo = trim($this->searchUser);
+
+        $q = User::query()
+            ->where('id', '!=', $me)
+            ->orderBy('nome');
+
+        if ($termo !== '') {
+            $q->where('nome', 'like', "%{$termo}%");
+        }
+
+        $this->utilizadoresFiltrados = $q->limit(50)->get();
+    }
+
+    public function updatedSearchConversa(): void
+    {
+        $this->recarregarBarraLateral();
+    }
 
     public function render()
     {

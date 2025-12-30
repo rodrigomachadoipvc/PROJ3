@@ -1,5 +1,4 @@
 <div class="h-screen flex flex-col">
-
     <!-- Cabeçalho -->
     <header class="bg-white shadow sticky top-0 z-10">
         <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
@@ -7,17 +6,15 @@
                 @if ($conversaAtiva)
                     @php
                         $avatar = null;
-                        $label  = null;
-
+                        $label = null;
                         if ($conversaAtiva->tipo === 'dm') {
-                            $outro  = $conversaAtiva->participantes->where('id', '!=', Auth::id())->first();
+                            $outro = $conversaAtiva->participantes->where('id', '!=', Auth::id())->first();
                             $avatar = $outro?->avatar_url_public;
-                            $label  = $outro?->nome ?? 'Conversa DM';
+                            $label = $outro?->nome ?? 'Conversa DM';
                         } else {
                             $label = $conversaAtiva->grupo?->nome ?? 'Grupo';
                         }
                     @endphp
-
                     @if ($avatar)
                         <img src="{{ $avatar }}" class="w-9 h-9 rounded-full object-cover">
                     @else
@@ -25,7 +22,6 @@
                             {{ strtoupper(mb_substr($label, 0, 2)) }}
                         </div>
                     @endif
-
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                         {{ $label }}
                     </h2>
@@ -35,7 +31,6 @@
                     </h2>
                 @endif
             </div>
-
             @if ($conversaAtiva && $conversaAtiva->tipo === 'grupo')
                 <button
                     wire:click="toggleMembrosGrupo"
@@ -47,118 +42,145 @@
             @endif
         </div>
     </header>
-
     <!-- Corpo -->
     <div class="flex flex-grow overflow-hidden">
-
         <!-- Sidebar -->
         <aside class="w-1/4 bg-gray-100 border-r border-gray-200 overflow-y-auto p-4">
-
-            {{-- Conversas DM --}}
-            <h3 class="text-lg font-semibold mb-2 text-gray-700">Conversas (DM)</h3>
-
-            @php
-                $dmConversas = $conversas->where('tipo', 'dm');
-                $grupoConversas = $conversas->where('tipo', 'grupo');
-            @endphp
-
-            @forelse ($dmConversas as $conversa)
-                @php
-                    $outro = $conversa->participantes->where('id', '!=', Auth::id())->first();
-                    $ultima = $conversa->ultimaMensagem ?? null;
-                @endphp
-
-                <div wire:click="selecionarConversa({{ $conversa->id }})"
-                     class="block p-3 rounded-lg cursor-pointer shadow-sm mb-2 border transition
-                        {{ $conversaAtiva && $conversaAtiva->id === $conversa->id
-                            ? 'bg-indigo-100 border-indigo-300'
-                            : 'bg-white hover:bg-gray-50 border-gray-200' }}">
-
-                    <p class="font-semibold text-sm text-gray-800 truncate">
-                        {{ $outro?->nome ?? 'Utilizador' }}
-                    </p>
-
-                    @if ($ultima)
-                        <p class="text-xs text-gray-600 truncate mt-1">
-                            <strong>{{ $ultima->emissor_id == Auth::id() ? 'Você' : $ultima->emissor?->nome }}:</strong>
-                            {{ $ultima->conteudo ?? 'Anexo' }}
-                        </p>
-                        <span class="text-[11px] text-gray-400 float-right">
-                            {{ $ultima->created_at->diffForHumans() }}
-                        </span>
-                    @else
-                        <p class="text-xs text-gray-400 italic mt-1">Nenhuma mensagem ainda.</p>
-                    @endif
-                    <div class="clear-both"></div>
-                </div>
-            @empty
-                <p class="text-sm text-gray-500">Sem conversas DM.</p>
-            @endforelse
-
-            {{-- Grupos --}}
-            <h3 class="text-lg mt-6 font-semibold mb-2 text-gray-700">Grupos</h3>
-
-            @forelse ($grupoConversas as $conversa)
-                @php
-                    $ultima = $conversa->ultimaMensagem ?? null;
-                    $nomeGrupo = $conversa->nome ?? $conversa->grupo?->nome ?? 'Grupo';
-                @endphp
-
-                <div wire:click="selecionarConversa({{ $conversa->id }})"
-                     class="block p-3 rounded-lg cursor-pointer shadow-sm mb-2 border transition
-                        {{ $conversaAtiva && $conversaAtiva->id === $conversa->id
-                            ? 'bg-indigo-100 border-indigo-300'
-                            : 'bg-white hover:bg-gray-50 border-gray-200' }}">
-
-                    <p class="font-semibold text-sm text-gray-800 truncate">
-                        {{ $nomeGrupo }}
-                    </p>
-
-                    @if ($ultima)
-                        <p class="text-xs text-gray-600 truncate mt-1">
-                            <strong>{{ $ultima->emissor_id == Auth::id() ? 'Você' : $ultima->emissor?->nome }}:</strong>
-                            {{ $ultima->conteudo ?? 'Anexo' }}
-                        </p>
-                        <span class="text-[11px] text-gray-400 float-right">
-                            {{ $ultima->created_at->diffForHumans() }}
-                        </span>
-                    @else
-                        <p class="text-xs text-gray-400 italic mt-1">Nenhuma mensagem ainda.</p>
-                    @endif
-                    <div class="clear-both"></div>
-                </div>
-            @empty
-                <p class="text-sm text-gray-500">Sem grupos.</p>
-            @endforelse
-
-            {{-- Iniciar Conversa --}}
-            <div class="mt-6 pt-4 border-t border-gray-300">
-                <h3 class="text-lg font-semibold mb-4 text-gray-700">Iniciar Conversa (DM)</h3>
-
-                @forelse ($outrosUtilizadores as $outro)
-                    <div wire:click="iniciarConversaDM({{ $outro->id }})"
-                         class="block p-3 rounded-lg cursor-pointer bg-white hover:bg-gray-50 shadow-sm border border-gray-200 mb-1 flex items-center justify-between">
-                        <div>
-                            <p class="font-semibold text-sm text-gray-800">{{ $outro->nome }}</p>
-                            <span class="text-xs text-gray-500">
-                                {{ $outro->tipoUtilizador->nome ?? 'N/A' }}
-                            </span>
-                        </div>
-                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                        </svg>
-                    </div>
-                @empty
-                    <p class="text-sm text-gray-500">Sem outros utilizadores.</p>
-                @endforelse
+            <!-- Botão Nova conversa -->
+            <div class="flex items-center gap-2 mb-3">
+                <button type="button"
+                        wire:click="abrirNovaConversa"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-md">
+                    + Nova conversa
+                </button>
             </div>
+
+            <!-- Painel de seleção de utilizador (picker) -->
+            @if ($mostrarNovaConversa)
+                <div class="mb-3 bg-white border border-gray-200 rounded-md p-2">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-semibold text-gray-700">Nova conversa</p>
+                        <button type="button"
+                                wire:click="fecharNovaConversa"
+                                class="text-gray-400 hover:text-gray-700">
+                            ✕
+                        </button>
+                    </div>
+
+                    <input type="text"
+                           wire:model.live.debounce.200ms="searchUser"
+                           placeholder="Procurar utilizador..."
+                           class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 text-sm mb-2">
+
+                    <div class="max-h-72 overflow-y-auto">
+                        @forelse ($utilizadoresFiltrados as $u)
+                            <button type="button"
+                                    wire:click="iniciarConversaDM({{ $u->id }})"
+                                    class="w-full text-left p-2 rounded-md hover:bg-gray-50 flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-800">{{ $u->nome }}</p>
+                                    <p class="text-xs text-gray-500">{{ $u->tipoUtilizador->nome ?? '—' }}</p>
+                                </div>
+                                <span class="text-gray-400">›</span>
+                            </button>
+                        @empty
+                            <p class="text-xs text-gray-500 p-2">Sem resultados.</p>
+                        @endforelse
+                    </div>
+                </div>
+            @endif
+
+            <!-- Pesquisa de conversas -->
+            <div class="mb-3">
+                <input
+                    type="text"
+                    wire:model.live.debounce.300ms="searchConversa"
+                    placeholder="Pesquisar (pessoa, grupo ou mensagem)..."
+                    class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                >
+            </div>
+
+            <!-- Filtros tipo WhatsApp: Todos / Grupos / Favoritos -->
+            <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
+                <button type="button"
+                    wire:click="setFiltroConversas('todas')"
+                    class="px-4 py-1.5 rounded-full text-sm font-medium border whitespace-nowrap
+                    {{ $filtroConversas === 'todas' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+                    Todos
+                </button>
+
+                <button type="button"
+                    wire:click="setFiltroConversas('grupos')"
+                    class="px-4 py-1.5 rounded-full text-sm font-medium border whitespace-nowrap
+                    {{ $filtroConversas === 'grupos' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+                    Grupos
+                </button>
+
+                <button type="button"
+                    wire:click="setFiltroConversas('favoritos')"
+                    class="px-4 py-1.5 rounded-full text-sm font-medium border whitespace-nowrap
+                    {{ $filtroConversas === 'favoritos' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+                    Favoritos
+                </button>
+            </div>
+
+            <!-- Lista única de conversas (DM + Grupos misturados) -->
+            <h3 class="text-lg font-semibold mb-2 text-gray-700">Conversas</h3>
+
+
+            @forelse ($conversas as $conversa)
+                @php
+                    $ultima = $conversa->ultimaMensagem ?? null;
+
+                    if ($conversa->tipo === 'dm') {
+                        $outro = $conversa->participantes->where('id', '!=', Auth::id())->first();
+                        $titulo = $outro?->nome ?? 'Conversa';
+                    } else {
+                        $titulo = $conversa->grupo?->nome ?? 'Grupo';
+                    }
+                @endphp
+
+                <div wire:click="selecionarConversa({{ $conversa->id }})"
+                     class="block p-3 rounded-lg cursor-pointer shadow-sm mb-2 border transition
+                     {{ $conversaAtiva && $conversaAtiva->id === $conversa->id
+                        ? 'bg-indigo-100 border-indigo-300'
+                        : 'bg-white hover:bg-gray-50 border-gray-200' }}">
+
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="font-semibold text-sm text-gray-800 truncate">
+                            {{ $titulo }}
+                        </p>
+
+                        <button type="button"
+                                wire:click.stop="togglePin({{ $conversa->id }})"
+                                class="text-gray-400 hover:text-indigo-600 shrink-0"
+                                title="{{ (($conversa->is_pinned ?? 0) > 0) ? 'Remover pin' : 'Fixar conversa' }}">
+                            @if (($conversa->is_pinned ?? 0) > 0) ⭐ @else ☆ @endif
+                        </button>
+                    </div>
+
+                    @if ($ultima)
+                        <p class="text-xs text-gray-600 truncate mt-1">
+                            <strong>{{ $ultima->emissor_id == Auth::id() ? 'Você' : $ultima->emissor?->nome }}:</strong>
+                            {{ $ultima->conteudo ?? 'Anexo' }}
+                        </p>
+                        <span class="text-[11px] text-gray-400 float-right">
+                            {{ $ultima->created_at->diffForHumans() }}
+                        </span>
+                    @else
+                        <p class="text-xs text-gray-400 italic mt-1">Nenhuma mensagem ainda.</p>
+                    @endif
+
+                    <div class="clear-both"></div>
+                </div>
+            @empty
+                <p class="text-sm text-gray-500">Sem conversas.</p>
+            @endforelse
         </aside>
 
         <!-- Área das Mensagens -->
         <section class="flex flex-col flex-1">
             <div class="flex-grow bg-white p-6 overflow-y-auto">
-
                 @php
                     $initials = function (?string $nome): string {
                         $nome = trim($nome ?? '');
@@ -170,22 +192,17 @@
                     };
                     $previousEmissorId = null;
                 @endphp
-
                 @if ($conversaAtiva)
-
                     @forelse ($mensagens as $mensagem)
                         @php
                             $sender = $mensagem->emissor;
                             $isOwn = $mensagem->emissor_id == Auth::id();
                             $isNewGroup = $previousEmissorId !== $mensagem->emissor_id;
                             $previousEmissorId = $mensagem->emissor_id;
-
                             $senderAvatar = $sender->avatar_url_public;
                             $senderInitials = $initials($sender->nome);
                         @endphp
-
                         @if ($isNewGroup)
-
                             {{-- Mensagem própria --}}
                             @if ($isOwn)
                                 <div class="flex items-start justify-end mt-4 space-x-3">
@@ -200,14 +217,11 @@
                                             @if ($mensagem->anexos && $mensagem->anexos->count())
                                                 <div class="mt-2 space-y-2">
                                                     @foreach ($mensagem->anexos as $anexo)
-
                                                         @php
                                                             $isImage = str_starts_with($anexo->mime_type, 'image/');
                                                             $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
                                                         @endphp
-
                                                         @if ($isImage)
-                                                            {{-- Preview de imagem --}}
                                                             <a href="{{ route('anexos.ver', $anexo) }}"
                                                             target="_blank"
                                                             class="inline-block">
@@ -215,9 +229,7 @@
                                                                     alt="{{ $anexo->nome_original }}"
                                                                     class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
                                                             </a>
-
                                                         @else
-                                                            {{-- Documento / ficheiro --}}
                                                             <div class="flex items-center justify-between
                                                                         bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
                                                                 <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
@@ -225,7 +237,6 @@
                                                                     <span class="truncate">{{ $anexo->nome_original }}</span>
                                                                     <span class="text-gray-400">({{ $sizeMb }} MB)</span>
                                                                 </div>
-
                                                                 <a href="{{ route('anexos.ver', $anexo) }}"
                                                                 target="_blank"
                                                                 class="text-indigo-600 hover:underline text-xs">
@@ -241,7 +252,6 @@
                                             </div>
                                         </div>
                                     </div>
-
                                     <div class="flex-shrink-0">
                                         @if ($senderAvatar)
                                             <img src="{{ $senderAvatar }}" class="w-8 h-8 rounded-full object-cover">
@@ -252,11 +262,8 @@
                                         @endif
                                     </div>
                                 </div>
-
-                            {{-- Mensagem de outro utilizador --}}
                             @else
                                 <div class="flex items-start justify-start mt-4 space-x-3">
-
                                     <div class="flex-shrink-0">
                                         @if ($senderAvatar)
                                             <img src="{{ $senderAvatar }}" class="w-8 h-8 rounded-full object-cover">
@@ -266,7 +273,6 @@
                                             </div>
                                         @endif
                                     </div>
-
                                     <div class="max-w-lg">
                                         <div class="bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
                                             <p class="text-xs font-semibold text-gray-700 mb-1">{{ $sender->nome }}</p>
@@ -279,14 +285,11 @@
                                             @if ($mensagem->anexos && $mensagem->anexos->count())
                                                 <div class="mt-2 space-y-2">
                                                     @foreach ($mensagem->anexos as $anexo)
-
                                                         @php
                                                             $isImage = str_starts_with($anexo->mime_type, 'image/');
                                                             $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
                                                         @endphp
-
                                                         @if ($isImage)
-                                                            {{-- Preview de imagem --}}
                                                             <a href="{{ route('anexos.ver', $anexo) }}"
                                                             target="_blank"
                                                             class="inline-block">
@@ -294,9 +297,7 @@
                                                                     alt="{{ $anexo->nome_original }}"
                                                                     class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
                                                             </a>
-
                                                         @else
-                                                            {{-- Documento / ficheiro --}}
                                                             <div class="flex items-center justify-between
                                                                         bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
                                                                 <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
@@ -304,7 +305,6 @@
                                                                     <span class="truncate">{{ $anexo->nome_original }}</span>
                                                                     <span class="text-gray-400">({{ $sizeMb }} MB)</span>
                                                                 </div>
-
                                                                 <a href="{{ route('anexos.ver', $anexo) }}"
                                                                 target="_blank"
                                                                 class="text-indigo-600 hover:underline text-xs">
@@ -312,7 +312,6 @@
                                                                 </a>
                                                             </div>
                                                         @endif
-
                                                     @endforeach
                                                 </div>
                                             @endif
@@ -323,7 +322,6 @@
                                     </div>
                                 </div>
                             @endif
-
                         @else
                             {{-- Continuação do grupo de mensagens --}}
                             @if ($isOwn)
@@ -339,14 +337,11 @@
                                             @if ($mensagem->anexos && $mensagem->anexos->count())
                                                 <div class="mt-2 space-y-2">
                                                     @foreach ($mensagem->anexos as $anexo)
-
                                                         @php
                                                             $isImage = str_starts_with($anexo->mime_type, 'image/');
                                                             $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
                                                         @endphp
-
                                                         @if ($isImage)
-                                                            {{-- Preview de imagem --}}
                                                             <a href="{{ route('anexos.ver', $anexo) }}"
                                                             target="_blank"
                                                             class="inline-block">
@@ -354,9 +349,7 @@
                                                                     alt="{{ $anexo->nome_original }}"
                                                                     class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
                                                             </a>
-
                                                         @else
-                                                            {{-- Documento / ficheiro --}}
                                                             <div class="flex items-center justify-between
                                                                         bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
                                                                 <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
@@ -364,7 +357,6 @@
                                                                     <span class="truncate">{{ $anexo->nome_original }}</span>
                                                                     <span class="text-gray-400">({{ $sizeMb }} MB)</span>
                                                                 </div>
-
                                                                 <a href="{{ route('anexos.ver', $anexo) }}"
                                                                 target="_blank"
                                                                 class="text-indigo-600 hover:underline text-xs">
@@ -394,14 +386,11 @@
                                             @if ($mensagem->anexos && $mensagem->anexos->count())
                                                 <div class="mt-2 space-y-2">
                                                     @foreach ($mensagem->anexos as $anexo)
-
                                                         @php
                                                             $isImage = str_starts_with($anexo->mime_type, 'image/');
                                                             $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
                                                         @endphp
-
                                                         @if ($isImage)
-                                                            {{-- Preview de imagem --}}
                                                             <a href="{{ route('anexos.ver', $anexo) }}"
                                                             target="_blank"
                                                             class="inline-block">
@@ -409,9 +398,7 @@
                                                                     alt="{{ $anexo->nome_original }}"
                                                                     class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
                                                             </a>
-
                                                         @else
-                                                            {{-- Documento / ficheiro --}}
                                                             <div class="flex items-center justify-between
                                                                         bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
                                                                 <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
@@ -419,7 +406,6 @@
                                                                     <span class="truncate">{{ $anexo->nome_original }}</span>
                                                                     <span class="text-gray-400">({{ $sizeMb }} MB)</span>
                                                                 </div>
-
                                                                 <a href="{{ route('anexos.ver', $anexo) }}"
                                                                 target="_blank"
                                                                 class="text-indigo-600 hover:underline text-xs">
@@ -427,7 +413,6 @@
                                                                 </a>
                                                             </div>
                                                         @endif
-
                                                     @endforeach
                                                 </div>
                                             @endif
@@ -439,22 +424,15 @@
                                 </div>
                             @endif
                         @endif
-
                     @empty
                         <p class="text-center text-gray-500 text-sm italic">Nenhuma mensagem ainda.</p>
                     @endforelse
-
                 @else
                     <p class="text-center text-gray-500 text-sm italic">Selecione uma conversa para ver as mensagens.</p>
                     <p class="text-center text-gray-500 text-sm italic">Caso tenha alguma dúvida mande, em qualquer dm ou grupo, @sistema e mostrará todas as ajudas! </p>
                 @endif
             </div>
-
-
-            
-
-
-
+           
             <!-- Caixa de envio -->
             <div class="bg-gray-100 p-4 border-t border-gray-200">
                 @if ($conversaAtiva)
@@ -468,19 +446,16 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L6.343 10.172a6 6 0 108.485 8.485L20 13"/>
                             </svg>
-
                             <input type="file"
                                 class="hidden"
                                 multiple
                                 wire:model="uploads">
                         </label>
-
                         <input type="text"
                                wire:model.defer="novaMensagem"
                                placeholder="Escreva a sua mensagem..."
                                class="flex-grow border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm"
                                autocomplete="off">
-
                         <button type="submit"
                                 wire:loading.attr="disabled"
                                 wire:target="uploads,enviarMensagem"
@@ -499,7 +474,6 @@
                             <p class="text-xs text-gray-600 font-semibold mb-1">
                                 Ficheiros selecionados ({{ count($uploads) }}):
                             </p>
-
                             <ul class="space-y-1">
                                 @foreach ($uploads as $i => $file)
                                     <li class="flex items-center justify-between text-xs text-gray-700">
@@ -509,7 +483,6 @@
                                                 ({{ number_format($file->getSize() / 1024 / 1024, 2) }} MB)
                                             </span>
                                         </span>
-
                                         <button type="button"
                                                 wire:click="removerUpload({{ $i }})"
                                                 class="text-red-500 hover:text-red-700 text-xs ml-2">
@@ -523,24 +496,20 @@
                     @error('uploads')
                         <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                     @enderror
-
                     @error('uploads.*')
                         <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                     @enderror
-
                 @else
                     <p class="text-center text-gray-500 text-sm italic">Selecione uma conversa.</p>
                 @endif
             </div>
         </section>
-
         {{-- Sidebar direita — Membros do grupo --}}
             @if ($mostrarMembrosGrupo && $membrosGrupo)
                 <aside class="w-64 bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">
                         Membros do Grupo ({{ $membrosGrupo->count() }})
                     </h3>
-
                     <ul class="space-y-2">
                         @foreach ($membrosGrupo as $membro)
                             <li class="flex items-center space-x-2">
@@ -552,11 +521,9 @@
                                         {{ strtoupper(mb_substr($membro->nome, 0, 2)) }}
                                     </div>
                                 @endif
-
                                 <span class="text-sm text-gray-800 flex-1">
                                     {{ $membro->nome }}
                                 </span>
-
                                 @if ($membro->pivot->is_admin ?? false)
                                     <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">
                                         Admin
@@ -567,48 +534,33 @@
                     </ul>
                 </aside>
             @endif
-
-
     </div>
 </div>
 <script>
     (function () {
         let currentSubscription = null;
-
         function subscribeToConversa(conversaId) {
             if (!conversaId || !window.Echo) return;
-
-            // Sair do canal anterior
             if (currentSubscription) {
                 try { window.Echo.leave(currentSubscription); } catch (e) {}
                 currentSubscription = null;
             }
-
             const channelName = `private-conversa.${conversaId}`;
             currentSubscription = `conversa.${conversaId}`;
-
             window.Echo.private(`conversa.${conversaId}`)
                 .listen('.mensagem.nova', (e) => {
-                    // Envia o payload para Livewire atualizar sem refresh
                     if (window.Livewire) {
                         window.Livewire.dispatch('mensagemRecebidaRealtime', e);
                     }
                 });
         }
-
-        // Quando o Livewire muda a conversa ativa
         document.addEventListener('livewire:init', () => {
             Livewire.on('conversa-selecionada', (data) => {
                 subscribeToConversa(data.conversaId);
             });
-
             Livewire.on('scroll-chat-para-fundo', () => {
                 const container = document.querySelector('main .overflow-y-auto');
                 if (container) container.scrollTop = container.scrollHeight;
-            });
-
-            Livewire.on('limpar-input-chat', () => {
-                // opcional: o wire:model já limpa, mas mantém UX suave
             });
         });
     })();
