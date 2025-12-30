@@ -35,4 +35,9 @@ class Conversa extends Model
     {
         return $this->belongsTo(Mensagem::class, 'ultima_mensagem_id');
     }
+
+    public function pins()
+    {
+        return $this->hasMany(\App\Models\ConversaPin::class, 'conversa_id');
+    }
 }
