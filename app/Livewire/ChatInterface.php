@@ -34,8 +34,9 @@ class ChatInterface extends Component
 
     public string $searchConversa = '';
 
-    // Novo: Filtro de conversas (Todos / Grupos / Favoritos)
-    public string $filtroConversas = 'todas'; // 'todas' | 'grupos' | 'favoritos'
+    public string $filtroConversas = 'todas';
+
+    public ?int $highlightMessageId = null;
 
     protected $listeners = [
         'mensagemRecebidaRealtime' => 'onMensagemRecebidaRealtime',
@@ -43,7 +44,7 @@ class ChatInterface extends Component
 
     public function mount(Request $request): void
     {
-        $this->filtroConversas = 'todas'; // Default
+        $this->filtroConversas = 'todas';
         $this->carregarPropriedadesIniciais();
         $this->utilizadoresFiltrados = new Collection();
 
@@ -79,7 +80,7 @@ class ChatInterface extends Component
             ->get();
     }
 
-    public function selecionarConversa(int $conversaId): void
+    public function selecionarConversa(int $conversaId, ?int $scrollToMessageId = null): void
     {
         $utilizador = Auth::user();
 
@@ -102,7 +103,6 @@ class ChatInterface extends Component
             $this->mensagens = new Collection();
         }
 
-        // Limpar campos ao trocar de conversa
         $this->novaMensagem = '';
         $this->uploads = [];
         $this->dispatch('reset-upload-input');
@@ -110,7 +110,12 @@ class ChatInterface extends Component
         $this->mostrarMembrosGrupo = false;
         $this->membrosGrupo = null;
 
-        // ✅ Manter conversa ativa após refresh
+        $this->highlightMessageId = $scrollToMessageId;
+
+        if ($scrollToMessageId) {
+            $this->dispatch('scroll-to-message', messageId: $scrollToMessageId);
+        }
+
         session()->put('conversa_ativa_id', $conversaId);
     }
 
@@ -133,6 +138,7 @@ class ChatInterface extends Component
             $this->recarregarBarraLateral();
         }
 
+        // chamada única
         $this->selecionarConversa($conversa->id);
     }
 
@@ -273,31 +279,39 @@ class ChatInterface extends Component
             ]);
 
         if ($termo !== '') {
+            $matchedIdSub = Mensagem::query()
+                ->select('id')
+                ->whereColumn('conversa_id', 'conversas.id')
+                ->whereNotNull('conteudo')
+                ->where('conteudo', 'like', "%{$termo}%")
+                ->orderByDesc('created_at')
+                ->limit(1);
+
+            $matchedBodySub = Mensagem::query()
+                ->select('conteudo')
+                ->whereColumn('conversa_id', 'conversas.id')
+                ->whereNotNull('conteudo')
+                ->where('conteudo', 'like', "%{$termo}%")
+                ->orderByDesc('created_at')
+                ->limit(1);
+
+            $query->addSelect([
+                'matched_message_id'   => $matchedIdSub,
+                'matched_message_body' => $matchedBodySub,
+            ]);
+
             $query->where(function ($q) use ($termo) {
-                $q->whereHas('grupo', function ($q2) use ($termo) {
-                    $q2->where('nome', 'like', "%{$termo}%");
-                });
-
-                $q->orWhereHas('participantes', function ($q2) use ($termo) {
-                    $q2->where('nome', 'like', "%{$termo}%");
-                });
-
-                $q->orWhereHas('mensagens', function ($q2) use ($termo) {
-                    $q2->whereNotNull('conteudo')
-                        ->where('conteudo', 'like', "%{$termo}%");
-                });
+                $q->whereHas('grupo', fn($q2) => $q2->where('nome', 'like', "%{$termo}%"))
+                  ->orWhereHas('participantes', fn($q2) => $q2->where('nome', 'like', "%{$termo}%"))
+                  ->orWhereHas('mensagens', fn($q2) => $q2->whereNotNull('conteudo')->where('conteudo', 'like', "%{$termo}%"));
             });
         }
 
-        // Aplicar filtro WhatsApp-style
         if ($this->filtroConversas === 'grupos') {
             $query->where('tipo', 'grupo');
         }
-
         if ($this->filtroConversas === 'favoritos') {
-            $query->whereHas('pins', function ($q) {
-                $q->where('user_id', auth()->id());
-            });
+            $query->whereHas('pins', fn($q) => $q->where('user_id', auth()->id()));
         }
 
         $this->conversas = $query
@@ -311,6 +325,24 @@ class ChatInterface extends Component
         $permitidos = ['todas', 'grupos', 'favoritos'];
         $this->filtroConversas = in_array($filtro, $permitidos, true) ? $filtro : 'todas';
         $this->recarregarBarraLateral();
+    }
+
+    public function highlightTerm(?string $text, string $term): string
+    {
+        $text = (string) $text;
+        $term = trim($term);
+
+        if ($term === '' || $text === '') {
+            return e($text);
+        }
+
+        $escaped = e($text);
+
+        return preg_replace(
+            '/' . preg_quote($term, '/') . '/i',
+            '<mark class="bg-yellow-200 px-1 rounded">$0</mark>',
+            $escaped
+        ) ?? $escaped;
     }
 
     public function onMensagemRecebidaRealtime(array $payload): void
