@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 use App\Models\User;
+use App\Models\Grupo;
 use App\Models\Conversa;
 use App\Models\Mensagem;
 use App\Models\Anexo;
@@ -40,6 +41,7 @@ class ChatInterface extends Component
 
     protected $listeners = [
         'mensagemRecebidaRealtime' => 'onMensagemRecebidaRealtime',
+        'clearHighlight' => 'clearHighlight', // novo listener
     ];
 
     public function mount(Request $request): void
@@ -117,6 +119,8 @@ class ChatInterface extends Component
         }
 
         session()->put('conversa_ativa_id', $conversaId);
+
+        $this->recarregarBarraLateral();
     }
 
     public function iniciarConversaDM(int $outroUtilizadorId): void
@@ -138,7 +142,6 @@ class ChatInterface extends Component
             $this->recarregarBarraLateral();
         }
 
-        // chamada única
         $this->selecionarConversa($conversa->id);
     }
 
@@ -295,9 +298,25 @@ class ChatInterface extends Component
                 ->orderByDesc('created_at')
                 ->limit(1);
 
+            $matchedParticipantSub = User::query()
+                ->select('users.nome')
+                ->join('participantes_conversa', 'users.id', '=', 'participantes_conversa.utilizador_id')
+                ->whereColumn('participantes_conversa.conversa_id', 'conversas.id')
+                ->where('users.nome', 'like', "%{$termo}%")
+                ->orderBy('users.nome')
+                ->limit(1);
+
+            $matchedGroupSub = Grupo::query()
+                ->select('grupos.nome')
+                ->whereColumn('grupos.id', 'conversas.grupo_id')
+                ->where('grupos.nome', 'like', "%{$termo}%")
+                ->limit(1);
+
             $query->addSelect([
                 'matched_message_id'   => $matchedIdSub,
                 'matched_message_body' => $matchedBodySub,
+                'matched_participant_name' => $matchedParticipantSub,
+                'matched_group_name' => $matchedGroupSub,
             ]);
 
             $query->where(function ($q) use ($termo) {
@@ -343,6 +362,29 @@ class ChatInterface extends Component
             '<mark class="bg-yellow-200 px-1 rounded">$0</mark>',
             $escaped
         ) ?? $escaped;
+    }
+
+    public function highlightTermUnderline(?string $text, string $term): string
+    {
+        $text = (string) $text;
+        $term = trim($term);
+
+        if ($term === '' || $text === '') {
+            return e($text);
+        }
+
+        $escaped = e($text);
+
+        return preg_replace(
+            '/' . preg_quote($term, '/') . '/i',
+            '<span class="underline decoration-yellow-400 decoration-2 underline-offset-4">$0</span>',
+            $escaped
+        ) ?? $escaped;
+    }
+
+    public function clearHighlight(): void
+    {
+        $this->highlightMessageId = null;
     }
 
     public function onMensagemRecebidaRealtime(array $payload): void

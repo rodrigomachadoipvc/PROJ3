@@ -150,7 +150,11 @@
 
                     <div class="flex items-start justify-between gap-2">
                         <p class="font-semibold text-sm text-gray-800 truncate">
-                            {{ $titulo }}
+                            @if ($termo !== '' && stripos($titulo, $termo) !== false)
+                                {!! $this->highlightTermUnderline($titulo, $termo) !!}
+                            @else
+                                {{ $titulo }}
+                            @endif
                         </p>
 
                         <button type="button"
@@ -165,6 +169,26 @@
                         <p class="text-xs text-gray-600 truncate mt-1">
                             <span class="text-indigo-600 font-semibold">Encontrado:</span>
                             {!! $this->highlightTerm($matchBody, $termo) !!}
+                        </p>
+                        @if ($ultima)
+                            <span class="text-[11px] text-gray-400 float-right">
+                                {{ $ultima->created_at->diffForHumans() }}
+                            </span>
+                        @endif
+                    @elseif ($termo !== '' && $conversa->matched_group_name)
+                        <p class="text-xs text-gray-600 truncate mt-1">
+                            <span class="text-indigo-600 font-semibold">Encontrado:</span>
+                            {!! $this->highlightTermUnderline($conversa->matched_group_name, $termo) !!}
+                        </p>
+                        @if ($ultima)
+                            <span class="text-[11px] text-gray-400 float-right">
+                                {{ $ultima->created_at->diffForHumans() }}
+                            </span>
+                        @endif
+                    @elseif ($termo !== '' && $conversa->matched_participant_name)
+                        <p class="text-xs text-gray-600 truncate mt-1">
+                            <span class="text-indigo-600 font-semibold">Encontrado:</span>
+                            {!! $this->highlightTermUnderline($conversa->matched_participant_name, $termo) !!}
                         </p>
                         @if ($ultima)
                             <span class="text-[11px] text-gray-400 float-right">
@@ -579,6 +603,13 @@
 
                 el.classList.add('bg-yellow-50');
                 setTimeout(() => el.classList.remove('bg-yellow-50'), 2000);
+
+                // Limpa o ring amarelo após 3 segundos
+                setTimeout(() => {
+                    if (window.Livewire) {
+                        window.Livewire.dispatch('clearHighlight');
+                    }
+                }, 3000);
             });
         });
     })();
