@@ -1,39 +1,95 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Criar Novo Grupo de Chat') }}
+            Criar novo grupo de chat
         </h2>
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    
-                    <h3 class="text-xl font-bold mb-6">{{ __('Detalhes do Novo Grupo') }}</h3>
+                <div class="p-8 text-gray-900">
+
+                    {{-- Título --}}
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            Detalhes do grupo
+                        </h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Define as informações base do novo grupo de chat.
+                        </p>
+                    </div>
 
                     <!-- Formulário de Criação -->
-                    <form method="POST" action="{{ route('admin.grupos.store') }}">
+                    <form method="POST" action="{{ route('admin.grupos.store') }}" class="space-y-6">
                         @csrf
 
                         <!-- Nome do Grupo -->
-                        <div class="mb-4">
-                            <x-input-label for="nome" :value="__('Nome do Grupo (Ex: Projeto Alpha, Equipa Comercial)')" />
-                            <x-text-input id="nome" class="block mt-1 w-full" type="text" name="nome" :value="old('nome')" required autofocus />
+                        <div>
+                            <x-input-label
+                                for="nome"
+                                :value="__('Nome do grupo')"
+                            />
+
+                            <x-text-input
+                                id="nome"
+                                type="text"
+                                name="nome"
+                                :value="old('nome')"
+                                required
+                                autofocus
+                                class="mt-1 block w-full
+                                       rounded-lg
+                                       bg-gray-50 border border-gray-300
+                                       focus:bg-white
+                                       focus:border-brand-secondary
+                                       focus:ring-brand-secondary"
+                                placeholder="Ex.: Projeto Alpha, Equipa Comercial"
+                            />
+
                             <x-input-error :messages="$errors->get('nome')" class="mt-2" />
                         </div>
 
                         <!-- Descrição -->
-                        <div class="mb-6">
-                            <x-input-label for="descricao" :value="__('Descrição (Opcional)')" />
-                            <textarea id="descricao" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" name="descricao">{{ old('descricao') }}</textarea>
+                        <div>
+                            <x-input-label
+                                for="descricao"
+                                :value="__('Descrição (opcional)')"
+                            />
+
+                            <textarea
+                                id="descricao"
+                                name="descricao"
+                                rows="4"
+                                class="mt-1 block w-full
+                                       rounded-lg
+                                       bg-gray-50 border border-gray-300
+                                       focus:bg-white
+                                       focus:border-brand-secondary
+                                       focus:ring-brand-secondary
+                                       shadow-sm"
+                                placeholder="Breve descrição do objetivo do grupo"
+                            >{{ old('descricao') }}</textarea>
+
                             <x-input-error :messages="$errors->get('descricao')" class="mt-2" />
                         </div>
-                        
-                        <div class="flex items-center justify-end mt-4">
-                            <a href="{{ route('admin.grupos.index') }}" class="text-gray-600 hover:text-gray-900 mr-4">{{ __('Cancelar') }}</a>
-                            <x-primary-button>
-                                {{ __('Guardar Grupo') }}
+
+                        <!-- Ações -->
+                        <div class="flex items-center justify-end gap-4 pt-4">
+                            <a
+                                href="{{ route('admin.grupos.index') }}"
+                                class="text-sm text-gray-600
+                                       hover:text-brand-secondary
+                                       focus:outline-none focus:ring-2
+                                       focus:ring-offset-2
+                                       focus:ring-brand-secondary
+                                       rounded-md"
+                            >
+                                Cancelar
+                            </a>
+
+                            <x-primary-button class="px-6 py-3">
+                                Guardar grupo
                             </x-primary-button>
                         </div>
                     </form>
