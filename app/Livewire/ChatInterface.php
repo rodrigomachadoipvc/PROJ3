@@ -15,7 +15,7 @@ use App\Models\Conversa;
 use App\Models\Mensagem;
 use App\Models\Anexo;
 use App\Models\Grupo;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ChatInterface extends Component
