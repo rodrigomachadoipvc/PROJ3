@@ -12,7 +12,9 @@
                             $avatar = $outro?->avatar_url_public;
                             $label = $outro?->nome ?? 'Conversa DM';
                         } else {
-                            $label = $conversaAtiva->grupo?->nome ?? 'Grupo';
+                            $grupo = $conversaAtiva->grupo;
+                            $avatar = $grupo?->foto_path ? asset('storage/' . $grupo->foto_path) : null;
+                            $label = $grupo?->nome ?? 'Grupo';
                         }
                     @endphp
                     @if ($avatar)
@@ -25,6 +27,11 @@
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                         {{ $label }}
                     </h2>
+                    @if ($conversaAtiva->tipo === 'grupo' && $this->userPodeGerirGrupo())
+                        <button type="button" wire:click.stop.prevent="openEditarGrupo" class="text-sm text-gray-600 hover:text-indigo-600">
+                            Editar
+                        </button>
+                    @endif
                 @else
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                         Communico Chat
@@ -142,7 +149,7 @@
                     $matchBody = $conversa->matched_message_body ?? null;
                 @endphp
 
-                <div wire:click="selecionarConversa({{ $conversa->id }}, {{ $conversa->matched_message_id ?? 'null' }})"
+                <div wire:key="conversa-{{ $conversa->id }}" wire:click="selecionarConversa({{ $conversa->id }}, {{ $conversa->matched_message_id ?? 'null' }})"
                      class="block p-3 rounded-lg cursor-pointer shadow-sm mb-2 border transition
                      {{ $conversaAtiva && $conversaAtiva->id === $conversa->id
                         ? 'bg-indigo-100 border-indigo-300'
@@ -197,7 +204,7 @@
                         @endif
                     @elseif ($ultima)
                         <p class="text-xs text-gray-600 truncate mt-1">
-                            <strong>{{ $ultima->emissor_id == Auth::id() ? 'Você' : $ultima->emissor?->nome }}:</strong>
+                            <strong>{{ $ultima->emissor_id == Auth::id() ? 'Tu' : $ultima->emissor?->nome }}:</strong>
                             {{ $ultima->conteudo ?? 'Anexo' }}
                         </p>
                         <span class="text-[11px] text-gray-400 float-right">
@@ -541,9 +548,14 @@
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">
                     Membros do Grupo ({{ $membrosGrupo->count() }})
                 </h3>
+                @if ($this->userPodeGerirMembros())
+                    <button wire:click.stop.prevent="abrirAdicionarMembro" class="text-sm text-indigo-600 hover:underline mb-3">
+                        Adicionar membro
+                    </button>
+                @endif
                 <ul class="space-y-2">
                     @foreach ($membrosGrupo as $membro)
-                        <li class="flex items-center space-x-2">
+                        <li wire:key="membro-{{ $membro->id }}" class="flex items-center space-x-2">
                             @if ($membro->avatar_url_public)
                                 <img src="{{ $membro->avatar_url_public }}"
                                     class="w-7 h-7 rounded-full object-cover">
@@ -555,10 +567,33 @@
                             <span class="text-sm text-gray-800 flex-1">
                                 {{ $membro->nome }}
                             </span>
-                            @if ($membro->pivot->is_admin ?? false)
+                            @php
+                                $role = $membro->pivot->role ?? 'member';
+                                $badge = $role === 'moderator' ? 'Moderador' : 'Membro';
+                                $grupo = $conversaAtiva->grupo;
+                                $isCriador = (int)$grupo->criador_id === (int)$membro->id;
+                                $isSystemAdmin = optional($membro->tipoUtilizador)->nome === 'Administrador';
+                                $isBloqueado = $isCriador || $isSystemAdmin;
+                            @endphp
+                            @if (!$this->userPodeGerirMembros())
                                 <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">
-                                    Admin
+                                    {{ $badge }}
                                 </span>
+                            @else
+                                @if ($isBloqueado)
+                                    <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">
+                                        Moderador
+                                    </span>
+                                    <span class="text-xs text-gray-500 ml-1">🔒</span>
+                                @else
+                                    <select wire:change.stop="definirRoleMembro({{ $membro->id }}, $event.target.value)" class="text-xs">
+                                        <option value="member" {{ $role === 'member' ? 'selected' : '' }}>Membro</option>
+                                        <option value="moderator" {{ $role === 'moderator' ? 'selected' : '' }}>Moderador</option>
+                                    </select>
+                                    <button type="button" wire:click.stop.prevent="removerMembroDoGrupo({{ $membro->id }})" class="text-red-500 hover:text-red-700 text-xs">
+                                        Remover
+                                    </button>
+                                @endif
                             @endif
                         </li>
                     @endforeach
@@ -566,51 +601,104 @@
             </aside>
         @endif
     </div>
-</div>
-<script>
-    (function () {
-        let currentSubscription = null;
-        function subscribeToConversa(conversaId) {
-            if (!conversaId || !window.Echo) return;
-            if (currentSubscription) {
-                try { window.Echo.leave(currentSubscription); } catch (e) {}
-                currentSubscription = null;
+
+@if ($mostrarEditarGrupo)
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-lg font-semibold mb-4">Editar Grupo</h2>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Nome do Grupo</label>
+                <input type="text" wire:model.defer="novoNomeGrupo"
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Foto do Grupo</label>
+                <input type="file" wire:model="fotoGrupoUpload" class="mt-1 block w-full">
+            </div>
+
+            <div class="flex justify-end space-x-2">
+                <button type="button"
+                        wire:click="guardarGrupo"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md">
+                    Guardar
+                </button>
+
+                <button type="button"
+                        wire:click="cancelarEditarGrupo"
+                        class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if ($mostrarAdicionarMembro)
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-lg font-semibold mb-4">Adicionar Membro</h2>
+            <select wire:model="selectedUserToAdd" class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 mb-4">
+                <option value="">Selecione um utilizador</option>
+                @foreach ($usersDisponiveisAdicionar as $u)
+                    <option value="{{ $u->id }}">{{ $u->nome }} ({{ $u->email }})</option>
+                @endforeach
+            </select>
+            <div class="flex justify-end space-x-2">
+                <button type="button" wire:click.stop.prevent="adicionarMembroSelecionado" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md">
+                    Adicionar
+                </button>
+                <button type="button" wire:click.stop.prevent="fecharAdicionarMembro" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+@endif
+
+@once
+    <script>
+        // o teu JS aqui (igual), mas dentro do root do componente
+        (function () {
+            let currentSubscription = null;
+            function subscribeToConversa(conversaId) {
+                if (!conversaId || !window.Echo) return;
+                if (currentSubscription) {
+                    try { window.Echo.leave(currentSubscription); } catch (e) {}
+                    currentSubscription = null;
+                }
+                currentSubscription = `conversa.${conversaId}`;
+                window.Echo.private(`conversa.${conversaId}`)
+                    .listen('.mensagem.nova', (e) => {
+                        if (window.Livewire) {
+                            window.Livewire.dispatch('mensagemRecebidaRealtime', e);
+                        }
+                    });
             }
-            currentSubscription = `conversa.${conversaId}`;
-            window.Echo.private(`conversa.${conversaId}`)
-                .listen('.mensagem.nova', (e) => {
-                    if (window.Livewire) {
-                        window.Livewire.dispatch('mensagemRecebidaRealtime', e);
-                    }
+            document.addEventListener('livewire:init', () => {
+                Livewire.on('conversa-selecionada', (data) => {
+                    subscribeToConversa(data.conversaId);
                 });
-        }
-
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('conversa-selecionada', (data) => {
-                subscribeToConversa(data.conversaId);
+                Livewire.on('scroll-chat-para-fundo', () => {
+                    const container = document.querySelector('.overflow-y-auto');
+                    if (container) container.scrollTop = container.scrollHeight;
+                });
+                Livewire.on('scroll-to-message', ({ messageId }) => {
+                    const el = document.getElementById('msg-' + messageId);
+                    if (!el) return;
+                    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    el.classList.add('bg-yellow-50');
+                    setTimeout(() => el.classList.remove('bg-yellow-50'), 2000);
+                    // Limpa o ring amarelo após 3 segundos
+                    setTimeout(() => {
+                        if (window.Livewire) {
+                            window.Livewire.dispatch('clearHighlight');
+                        }
+                    }, 3000);
+                });
             });
-
-            Livewire.on('scroll-chat-para-fundo', () => {
-                const container = document.querySelector('.overflow-y-auto');
-                if (container) container.scrollTop = container.scrollHeight;
-            });
-
-            Livewire.on('scroll-to-message', ({ messageId }) => {
-                const el = document.getElementById('msg-' + messageId);
-                if (!el) return;
-
-                el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-
-                el.classList.add('bg-yellow-50');
-                setTimeout(() => el.classList.remove('bg-yellow-50'), 2000);
-
-                // Limpa o ring amarelo após 3 segundos
-                setTimeout(() => {
-                    if (window.Livewire) {
-                        window.Livewire.dispatch('clearHighlight');
-                    }
-                }, 3000);
-            });
-        });
-    })();
-</script>
+        })();
+    </script>
+@endonce
+</div>

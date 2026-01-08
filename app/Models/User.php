@@ -105,7 +105,12 @@ class User extends Authenticatable implements MustVerifyEmail
             'participantes_conversa',
             'utilizador_id',
             'conversa_id'
-        )->withTimestamps('entrou_em', 'saiu_em');
+        )->withPivot(['entrou_em', 'saiu_em']);
+    }
+
+    public function conversasAtivas(): BelongsToMany
+    {
+        return $this->conversasParticipadas()->wherePivotNull('saiu_em');
     }
 
     public function mensagensEnviadas(): HasMany
@@ -121,7 +126,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function grupos(): BelongsToMany
     {
         return $this->belongsToMany(Grupo::class, 'grupo_user')
-            ->withPivot('is_admin')
+            ->withPivot('is_admin', 'role', 'added_by', 'joined_at', 'left_at')
             ->withTimestamps();
+    }
+
+    public function gruposAtivos(): BelongsToMany
+    {
+        return $this->grupos()->wherePivotNull('left_at');
     }
 }

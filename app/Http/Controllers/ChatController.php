@@ -37,9 +37,21 @@ class ChatController extends Controller
             ->whereHas('participantes', null, '=', 2) 
             ->first();
 
-        if (!$conversa) {
+        if ($conversa) {
+            foreach ([$utilizadorAtual->id, $outroUtilizadorId] as $id) {
+                $pivot = $conversa->participantes()->where('utilizador_id', $id)->first()->pivot;
+                $entrou_em = $pivot->entrou_em ?? now();
+                $conversa->participantes()->updateExistingPivot($id, [
+                    'entrou_em' => $entrou_em,
+                    'saiu_em' => null,
+                ]);
+            }
+        } else {
             $conversa = Conversa::create(['tipo' => 'dm']);
-            $conversa->participantes()->attach([$utilizadorAtual->id, $outroUtilizador->id]);
+            $conversa->participantes()->attach([
+                $utilizadorAtual->id => ['entrou_em' => now(), 'saiu_em' => null],
+                $outroUtilizador->id => ['entrou_em' => now(), 'saiu_em' => null],
+            ]);
         }
 
         return redirect()->route('chat.index')

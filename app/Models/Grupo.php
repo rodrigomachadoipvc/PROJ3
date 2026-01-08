@@ -12,14 +12,7 @@ class Grupo extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nome', 'descricao', 'criador_id'];
-
-    public function utilizadores(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'utilizador_grupo', 'grupo_id', 'utilizador_id')
-                    ->withPivot('funcao_no_grupo')
-                    ->withTimestamps();
-    }
+    protected $fillable = ['nome', 'descricao', 'criador_id', 'foto_path'];
 
     public function criador(): BelongsTo
     {
@@ -31,11 +24,55 @@ class Grupo extends Model
         return $this->hasOne(Conversa::class, 'grupo_id');
     }
 
-    public function membros()
+    /**
+     * Fonte ÚNICA de verdade para membros do grupo.
+     * NÃO filtrar aqui por left_at, para permitir reactivação e histórico.
+     */
+    public function membros(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'grupo_user')
-                    ->withPivot('is_admin')
-                    ->withTimestamps();
+            ->withPivot(['role', 'added_by', 'joined_at', 'left_at']) // mantém is_admin na BD se existir, mas não uses
+            ->withTimestamps();
     }
 
+    public function membrosAtivos(): BelongsToMany
+    {
+        return $this->membros()->wherePivotNull('left_at');
+    }
+
+    // ALIAS compatível (se existir código antigo)
+    public function utilizadores(): BelongsToMany
+    {
+        return $this->membros();
+    }
+
+    public function roleOfUser(int $userId): ?string
+    {
+        return $this->membrosAtivos()
+            ->wherePivot('user_id', $userId)
+            ->value('grupo_user.role');
+    }
+
+    public function isModerator(int $userId): bool
+    {
+        if ((int)$this->criador_id === (int)$userId) {
+            return true;
+        }
+
+        return $this->membrosAtivos()
+            ->wherePivot('user_id', $userId)
+            ->wherePivot('role', 'moderator')
+            ->exists();
+    }
+
+    // Mantém estes métodos se já estiverem a ser usados no código, mas com a semântica correcta:
+    public function canManageMembers(int $userId)
+    {
+        return $this->isModerator($userId);
+    }
+
+    public function canEditProfile(int $userId)
+    {
+        return $this->isModerator($userId);
+    }
 }
