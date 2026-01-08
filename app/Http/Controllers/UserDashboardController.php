@@ -15,14 +15,14 @@ class UserDashboardController extends Controller
         $user = Auth::user();
 
         // Carrega as conversas em que participa
-        $recentConversas = $user->conversasParticipadas()
-            ->with(['ultimaMensagem.emissor', 'grupo'])
+        $recentConversas = $user->conversasAtivas()
+            ->with(['ultimaMensagem.emissor', 'grupo', 'participantes'])
             ->orderBy('updated_at', 'desc')
             ->limit(5)
             ->get();
 
         // Carrega os grupos onde pertence
-        $recentGrupos = $user->grupos()
+        $recentGrupos = $user->gruposAtivos()
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();

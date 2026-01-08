@@ -23,7 +23,12 @@ class Conversa extends Model
     public function participantes(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'participantes_conversa', 'conversa_id', 'utilizador_id')
-                    ->withTimestamps('entrou_em', 'saiu_em'); // Inclui timestamps da pivot
+                    ->withPivot(['entrou_em', 'saiu_em']);
+    }
+
+    public function participantesAtivos(): BelongsToMany
+    {
+        return $this->participantes()->wherePivotNull('saiu_em');
     }
 
     public function grupo(): BelongsTo

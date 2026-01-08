@@ -26,7 +26,12 @@
 
                 @forelse ($recentConversas as $conversa)
                     @php 
-                        $outro = $conversa->participantes->where('id', '!=', $user->id)->first();
+                        if ($conversa->tipo === 'grupo') {
+                            $titulo = $conversa->grupo?->nome ?? 'Grupo';
+                        } else {
+                            $outro = $conversa->participantes->where('id', '!=', $user->id)->first();
+                            $titulo = $outro?->nome ?? 'Conversa';
+                        }
                         $ultima = $conversa->ultimaMensagem;
                     @endphp
 
@@ -34,12 +39,12 @@
                        class="block p-3 mb-2 rounded-lg hover:bg-gray-50 transition border border-gray-200">
 
                         <p class="font-medium text-sm text-gray-800">
-                            {{ $outro?->name ?? 'Conversa' }}
+                            {{ $titulo }}
                         </p>
 
                         @if ($ultima)
                             <p class="text-xs text-gray-600 mt-1 truncate">
-                                <strong>{{ $ultima->emissor_id == $user->id ? 'Você' : $ultima->emissor?->name }}:</strong>
+                                <strong>{{ $ultima->emissor_id == $user->id ? 'Tu' : $ultima->emissor?->nome }}:</strong>
                                 {{ $ultima->conteudo ?? 'Anexo' }}
                             </p>
 

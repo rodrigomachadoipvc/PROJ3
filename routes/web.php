@@ -56,9 +56,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     | Dashboard do Utilizador Normal
     |--------------------------------------------------------------------------
     */
-    Route::get('/dashboard', [UserDashboardController::class, 'index'])
+    Route::get('/user/dashboard', [UserDashboardController::class, 'index'])
         ->middleware(['auth', 'verified'])
-        ->name('dashboard');
+        ->name('user.dashboard');
         
     /*
     |--------------------------------------------------------------------------

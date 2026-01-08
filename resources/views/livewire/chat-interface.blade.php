@@ -12,7 +12,9 @@
                             $avatar = $outro?->avatar_url_public;
                             $label = $outro?->nome ?? 'Conversa DM';
                         } else {
-                            $label = $conversaAtiva->grupo?->nome ?? 'Grupo';
+                            $grupo = $conversaAtiva->grupo;
+                            $avatar = $grupo?->foto_path ? asset('storage/' . $grupo->foto_path) : null;
+                            $label = $grupo?->nome ?? 'Grupo';
                         }
                     @endphp
                     @if ($avatar)
@@ -25,6 +27,11 @@
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                         {{ $label }}
                     </h2>
+                    @if ($conversaAtiva->tipo === 'grupo' && $this->userPodeGerirGrupo())
+                        <button type="button" wire:click.stop.prevent="openEditarGrupo" class="text-sm text-gray-600 hover:text-indigo-600">
+                            Editar
+                        </button>
+                    @endif
                 @else
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                         Communico Chat
@@ -127,7 +134,6 @@
             <!-- Lista única de conversas (DM + Grupos misturados) -->
             <h3 class="text-lg font-semibold mb-2 text-gray-700">Conversas</h3>
 
-
             @forelse ($conversas as $conversa)
                 @php
                     $ultima = $conversa->ultimaMensagem ?? null;
@@ -138,9 +144,12 @@
                     } else {
                         $titulo = $conversa->grupo?->nome ?? 'Grupo';
                     }
+
+                    $termo = trim($searchConversa);
+                    $matchBody = $conversa->matched_message_body ?? null;
                 @endphp
 
-                <div wire:click="selecionarConversa({{ $conversa->id }})"
+                <div wire:key="conversa-{{ $conversa->id }}" wire:click="selecionarConversa({{ $conversa->id }}, {{ $conversa->matched_message_id ?? 'null' }})"
                      class="block p-3 rounded-lg cursor-pointer shadow-sm mb-2 border transition
                      {{ $conversaAtiva && $conversaAtiva->id === $conversa->id
                         ? 'bg-indigo-100 border-indigo-300'
@@ -148,7 +157,11 @@
 
                     <div class="flex items-start justify-between gap-2">
                         <p class="font-semibold text-sm text-gray-800 truncate">
-                            {{ $titulo }}
+                            @if ($termo !== '' && stripos($titulo, $termo) !== false)
+                                {!! $this->highlightTermUnderline($titulo, $termo) !!}
+                            @else
+                                {{ $titulo }}
+                            @endif
                         </p>
 
                         <button type="button"
@@ -159,9 +172,39 @@
                         </button>
                     </div>
 
-                    @if ($ultima)
+                    @if ($termo !== '' && $matchBody)
                         <p class="text-xs text-gray-600 truncate mt-1">
-                            <strong>{{ $ultima->emissor_id == Auth::id() ? 'Você' : $ultima->emissor?->nome }}:</strong>
+                            <span class="text-indigo-600 font-semibold">Encontrado:</span>
+                            {!! $this->highlightTerm($matchBody, $termo) !!}
+                        </p>
+                        @if ($ultima)
+                            <span class="text-[11px] text-gray-400 float-right">
+                                {{ $ultima->created_at->diffForHumans() }}
+                            </span>
+                        @endif
+                    @elseif ($termo !== '' && $conversa->matched_group_name)
+                        <p class="text-xs text-gray-600 truncate mt-1">
+                            <span class="text-indigo-600 font-semibold">Encontrado:</span>
+                            {!! $this->highlightTermUnderline($conversa->matched_group_name, $termo) !!}
+                        </p>
+                        @if ($ultima)
+                            <span class="text-[11px] text-gray-400 float-right">
+                                {{ $ultima->created_at->diffForHumans() }}
+                            </span>
+                        @endif
+                    @elseif ($termo !== '' && $conversa->matched_participant_name)
+                        <p class="text-xs text-gray-600 truncate mt-1">
+                            <span class="text-indigo-600 font-semibold">Encontrado:</span>
+                            {!! $this->highlightTermUnderline($conversa->matched_participant_name, $termo) !!}
+                        </p>
+                        @if ($ultima)
+                            <span class="text-[11px] text-gray-400 float-right">
+                                {{ $ultima->created_at->diffForHumans() }}
+                            </span>
+                        @endif
+                    @elseif ($ultima)
+                        <p class="text-xs text-gray-600 truncate mt-1">
+                            <strong>{{ $ultima->emissor_id == Auth::id() ? 'Tu' : $ultima->emissor?->nome }}:</strong>
                             {{ $ultima->conteudo ?? 'Anexo' }}
                         </p>
                         <span class="text-[11px] text-gray-400 float-right">
@@ -202,228 +245,225 @@
                             $senderAvatar = $sender->avatar_url_public;
                             $senderInitials = $initials($sender->nome);
                         @endphp
-                        @if ($isNewGroup)
-                            {{-- Mensagem própria --}}
-                            @if ($isOwn)
-                                <div class="flex items-start justify-end mt-4 space-x-3">
-                                    <div class="max-w-lg">
-                                        <div class="bg-blue-100 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
-                                            @if (!empty($mensagem->conteudo))
-                                                <p class="text-sm break-words">
-                                                    {{ $mensagem->conteudo }}
-                                                </p>
-                                            @endif
-                                            {{-- Anexos --}}
-                                            @if ($mensagem->anexos && $mensagem->anexos->count())
-                                                <div class="mt-2 space-y-2">
-                                                    @foreach ($mensagem->anexos as $anexo)
-                                                        @php
-                                                            $isImage = str_starts_with($anexo->mime_type, 'image/');
-                                                            $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
-                                                        @endphp
-                                                        @if ($isImage)
-                                                            <a href="{{ route('anexos.ver', $anexo) }}"
-                                                            target="_blank"
-                                                            class="inline-block">
-                                                                <img src="{{ route('anexos.ver', $anexo) }}"
-                                                                    alt="{{ $anexo->nome_original }}"
-                                                                    class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
-                                                            </a>
-                                                        @else
-                                                            <div class="flex items-center justify-between
-                                                                        bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                                                                <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
-                                                                    <span>📎</span>
-                                                                    <span class="truncate">{{ $anexo->nome_original }}</span>
-                                                                    <span class="text-gray-400">({{ $sizeMb }} MB)</span>
-                                                                </div>
+                        <div id="msg-{{ $mensagem->id }}"
+                             class="{{ $highlightMessageId === $mensagem->id ? 'ring-2 ring-yellow-300 rounded-2xl' : '' }}">
+                            @if ($isNewGroup)
+                                @if ($isOwn)
+                                    <div class="flex items-start justify-end mt-4 space-x-3">
+                                        <div class="max-w-lg">
+                                            <div class="bg-blue-100 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
+                                                @if (!empty($mensagem->conteudo))
+                                                    <p class="text-sm break-words">
+                                                        {{ $mensagem->conteudo }}
+                                                    </p>
+                                                @endif
+                                                @if ($mensagem->anexos && $mensagem->anexos->count())
+                                                    <div class="mt-2 space-y-2">
+                                                        @foreach ($mensagem->anexos as $anexo)
+                                                            @php
+                                                                $isImage = str_starts_with($anexo->mime_type, 'image/');
+                                                                $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
+                                                            @endphp
+                                                            @if ($isImage)
                                                                 <a href="{{ route('anexos.ver', $anexo) }}"
                                                                 target="_blank"
-                                                                class="text-indigo-600 hover:underline text-xs">
-                                                                    Download
+                                                                class="inline-block">
+                                                                    <img src="{{ route('anexos.ver', $anexo) }}"
+                                                                        alt="{{ $anexo->nome_original }}"
+                                                                        class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
                                                                 </a>
-                                                            </div>
-                                                        @endif
-                                                    @endforeach
+                                                            @else
+                                                                <div class="flex items-center justify-between
+                                                                            bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                                                                    <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
+                                                                        <span>📎</span>
+                                                                        <span class="truncate">{{ $anexo->nome_original }}</span>
+                                                                        <span class="text-gray-400">({{ $sizeMb }} MB)</span>
+                                                                    </div>
+                                                                    <a href="{{ route('anexos.ver', $anexo) }}"
+                                                                    target="_blank"
+                                                                    class="text-indigo-600 hover:underline text-xs">
+                                                                        Download
+                                                                    </a>
+                                                                </div>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                                <div class="mt-1 text-[11px] text-gray-600 flex justify-end">
+                                                    <span>{{ $mensagem->created_at->format('H:i') }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex-shrink-0">
+                                            @if ($senderAvatar)
+                                                <img src="{{ $senderAvatar }}" class="w-8 h-8 rounded-full object-cover">
+                                            @else
+                                                <div class="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-semibold">
+                                                    {{ $senderInitials }}
                                                 </div>
                                             @endif
-                                            <div class="mt-1 text-[11px] text-gray-600 flex justify-end">
-                                                <span>{{ $mensagem->created_at->format('H:i') }}</span>
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="flex items-start justify-start mt-4 space-x-3">
+                                        <div class="flex-shrink-0">
+                                            @if ($senderAvatar)
+                                                <img src="{{ $senderAvatar }}" class="w-8 h-8 rounded-full object-cover">
+                                            @else
+                                                <div class="w-8 h-8 rounded-full bg-gray-400 text-white flex items-center justify-center text-xs font-semibold">
+                                                    {{ $senderInitials }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <div class="max-w-lg">
+                                            <div class="bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
+                                                <p class="text-xs font-semibold text-gray-700 mb-1">{{ $sender->nome }}</p>
+                                                @if (!empty($mensagem->conteudo))
+                                                    <p class="text-sm break-words">
+                                                        {{ $mensagem->conteudo }}
+                                                    </p>
+                                                @endif
+                                                @if ($mensagem->anexos && $mensagem->anexos->count())
+                                                    <div class="mt-2 space-y-2">
+                                                        @foreach ($mensagem->anexos as $anexo)
+                                                            @php
+                                                                $isImage = str_starts_with($anexo->mime_type, 'image/');
+                                                                $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
+                                                            @endphp
+                                                            @if ($isImage)
+                                                                <a href="{{ route('anexos.ver', $anexo) }}"
+                                                                target="_blank"
+                                                                class="inline-block">
+                                                                    <img src="{{ route('anexos.ver', $anexo) }}"
+                                                                        alt="{{ $anexo->nome_original }}"
+                                                                        class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
+                                                                </a>
+                                                            @else
+                                                                <div class="flex items-center justify-between
+                                                                            bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                                                                    <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
+                                                                        <span>📎</span>
+                                                                        <span class="truncate">{{ $anexo->nome_original }}</span>
+                                                                        <span class="text-gray-400">({{ $sizeMb }} MB)</span>
+                                                                    </div>
+                                                                    <a href="{{ route('anexos.ver', $anexo) }}"
+                                                                    target="_blank"
+                                                                    class="text-indigo-600 hover:underline text-xs">
+                                                                        Download
+                                                                    </a>
+                                                                </div>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                                <div class="mt-1 text-[11px] text-gray-500 flex justify-end">
+                                                    <span>{{ $mensagem->created_at->format('H:i') }}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="flex-shrink-0">
-                                        @if ($senderAvatar)
-                                            <img src="{{ $senderAvatar }}" class="w-8 h-8 rounded-full object-cover">
-                                        @else
-                                            <div class="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-semibold">
-                                                {{ $senderInitials }}
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
+                                @endif
                             @else
-                                <div class="flex items-start justify-start mt-4 space-x-3">
-                                    <div class="flex-shrink-0">
-                                        @if ($senderAvatar)
-                                            <img src="{{ $senderAvatar }}" class="w-8 h-8 rounded-full object-cover">
-                                        @else
-                                            <div class="w-8 h-8 rounded-full bg-gray-400 text-white flex items-center justify-center text-xs font-semibold">
-                                                {{ $senderInitials }}
-                                            </div>
-                                        @endif
-                                    </div>
-                                    <div class="max-w-lg">
-                                        <div class="bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
-                                            <p class="text-xs font-semibold text-gray-700 mb-1">{{ $sender->nome }}</p>
-                                            @if (!empty($mensagem->conteudo))
-                                                <p class="text-sm break-words">
-                                                    {{ $mensagem->conteudo }}
-                                                </p>
-                                            @endif
-                                            {{-- Anexos --}}
-                                            @if ($mensagem->anexos && $mensagem->anexos->count())
-                                                <div class="mt-2 space-y-2">
-                                                    @foreach ($mensagem->anexos as $anexo)
-                                                        @php
-                                                            $isImage = str_starts_with($anexo->mime_type, 'image/');
-                                                            $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
-                                                        @endphp
-                                                        @if ($isImage)
-                                                            <a href="{{ route('anexos.ver', $anexo) }}"
-                                                            target="_blank"
-                                                            class="inline-block">
-                                                                <img src="{{ route('anexos.ver', $anexo) }}"
-                                                                    alt="{{ $anexo->nome_original }}"
-                                                                    class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
-                                                            </a>
-                                                        @else
-                                                            <div class="flex items-center justify-between
-                                                                        bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                                                                <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
-                                                                    <span>📎</span>
-                                                                    <span class="truncate">{{ $anexo->nome_original }}</span>
-                                                                    <span class="text-gray-400">({{ $sizeMb }} MB)</span>
-                                                                </div>
+                                @if ($isOwn)
+                                    <div class="flex justify-end mt-1">
+                                        <div class="max-w-lg mr-10">
+                                            <div class="bg-blue-100 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
+                                                @if (!empty($mensagem->conteudo))
+                                                    <p class="text-sm break-words">
+                                                        {{ $mensagem->conteudo }}
+                                                    </p>
+                                                @endif
+                                                @if ($mensagem->anexos && $mensagem->anexos->count())
+                                                    <div class="mt-2 space-y-2">
+                                                        @foreach ($mensagem->anexos as $anexo)
+                                                            @php
+                                                                $isImage = str_starts_with($anexo->mime_type, 'image/');
+                                                                $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
+                                                            @endphp
+                                                            @if ($isImage)
                                                                 <a href="{{ route('anexos.ver', $anexo) }}"
                                                                 target="_blank"
-                                                                class="text-indigo-600 hover:underline text-xs">
-                                                                    Download
+                                                                class="inline-block">
+                                                                    <img src="{{ route('anexos.ver', $anexo) }}"
+                                                                        alt="{{ $anexo->nome_original }}"
+                                                                        class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
                                                                 </a>
-                                                            </div>
-                                                        @endif
-                                                    @endforeach
+                                                            @else
+                                                                <div class="flex items-center justify-between
+                                                                            bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                                                                    <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
+                                                                        <span>📎</span>
+                                                                        <span class="truncate">{{ $anexo->nome_original }}</span>
+                                                                        <span class="text-gray-400">({{ $sizeMb }} MB)</span>
+                                                                    </div>
+                                                                    <a href="{{ route('anexos.ver', $anexo) }}"
+                                                                    target="_blank"
+                                                                    class="text-indigo-600 hover:underline text-xs">
+                                                                        Download
+                                                                    </a>
+                                                                </div>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                                <div class="mt-1 text-[11px] text-gray-600 flex justify-end">
+                                                    <span>{{ $mensagem->created_at->format('H:i') }}</span>
                                                 </div>
-                                            @endif
-                                            <div class="mt-1 text-[11px] text-gray-500 flex justify-end">
-                                                <span>{{ $mensagem->created_at->format('H:i') }}</span>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                @else
+                                    <div class="flex justify-start mt-1">
+                                        <div class="max-w-lg ml-10">
+                                            <div class="bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
+                                                @if (!empty($mensagem->conteudo))
+                                                    <p class="text-sm break-words">
+                                                        {{ $mensagem->conteudo }}
+                                                    </p>
+                                                @endif
+                                                @if ($mensagem->anexos && $mensagem->anexos->count())
+                                                    <div class="mt-2 space-y-2">
+                                                        @foreach ($mensagem->anexos as $anexo)
+                                                            @php
+                                                                $isImage = str_starts_with($anexo->mime_type, 'image/');
+                                                                $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
+                                                            @endphp
+                                                            @if ($isImage)
+                                                                <a href="{{ route('anexos.ver', $anexo) }}"
+                                                                target="_blank"
+                                                                class="inline-block">
+                                                                    <img src="{{ route('anexos.ver', $anexo) }}"
+                                                                        alt="{{ $anexo->nome_original }}"
+                                                                        class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
+                                                                </a>
+                                                            @else
+                                                                <div class="flex items-center justify-between
+                                                                            bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                                                                    <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
+                                                                        <span>📎</span>
+                                                                        <span class="truncate">{{ $anexo->nome_original }}</span>
+                                                                        <span class="text-gray-400">({{ $sizeMb }} MB)</span>
+                                                                    </div>
+                                                                    <a href="{{ route('anexos.ver', $anexo) }}"
+                                                                    target="_blank"
+                                                                    class="text-indigo-600 hover:underline text-xs">
+                                                                        Download
+                                                                    </a>
+                                                                </div>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                                <div class="mt-1 text-[11px] text-gray-500 flex justify-end">
+                                                    <span>{{ $mensagem->created_at->format('H:i') }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
                             @endif
-                        @else
-                            {{-- Continuação do grupo de mensagens --}}
-                            @if ($isOwn)
-                                <div class="flex justify-end mt-1">
-                                    <div class="max-w-lg mr-10">
-                                        <div class="bg-blue-100 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
-                                            @if (!empty($mensagem->conteudo))
-                                                <p class="text-sm break-words">
-                                                    {{ $mensagem->conteudo }}
-                                                </p>
-                                            @endif
-                                            {{-- Anexos --}}
-                                            @if ($mensagem->anexos && $mensagem->anexos->count())
-                                                <div class="mt-2 space-y-2">
-                                                    @foreach ($mensagem->anexos as $anexo)
-                                                        @php
-                                                            $isImage = str_starts_with($anexo->mime_type, 'image/');
-                                                            $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
-                                                        @endphp
-                                                        @if ($isImage)
-                                                            <a href="{{ route('anexos.ver', $anexo) }}"
-                                                            target="_blank"
-                                                            class="inline-block">
-                                                                <img src="{{ route('anexos.ver', $anexo) }}"
-                                                                    alt="{{ $anexo->nome_original }}"
-                                                                    class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
-                                                            </a>
-                                                        @else
-                                                            <div class="flex items-center justify-between
-                                                                        bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                                                                <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
-                                                                    <span>📎</span>
-                                                                    <span class="truncate">{{ $anexo->nome_original }}</span>
-                                                                    <span class="text-gray-400">({{ $sizeMb }} MB)</span>
-                                                                </div>
-                                                                <a href="{{ route('anexos.ver', $anexo) }}"
-                                                                target="_blank"
-                                                                class="text-indigo-600 hover:underline text-xs">
-                                                                    Download
-                                                                </a>
-                                                            </div>
-                                                        @endif
-                                                    @endforeach
-                                                </div>
-                                            @endif
-                                            <div class="mt-1 text-[11px] text-gray-600 flex justify-end">
-                                                <span>{{ $mensagem->created_at->format('H:i') }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @else
-                                <div class="flex justify-start mt-1">
-                                    <div class="max-w-lg ml-10">
-                                        <div class="bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-2 shadow-sm">
-                                            @if (!empty($mensagem->conteudo))
-                                                <p class="text-sm break-words">
-                                                    {{ $mensagem->conteudo }}
-                                                </p>
-                                            @endif
-                                            {{-- Anexos --}}
-                                            @if ($mensagem->anexos && $mensagem->anexos->count())
-                                                <div class="mt-2 space-y-2">
-                                                    @foreach ($mensagem->anexos as $anexo)
-                                                        @php
-                                                            $isImage = str_starts_with($anexo->mime_type, 'image/');
-                                                            $sizeMb = number_format($anexo->tamanho_bytes / 1024 / 1024, 2);
-                                                        @endphp
-                                                        @if ($isImage)
-                                                            <a href="{{ route('anexos.ver', $anexo) }}"
-                                                            target="_blank"
-                                                            class="inline-block">
-                                                                <img src="{{ route('anexos.ver', $anexo) }}"
-                                                                    alt="{{ $anexo->nome_original }}"
-                                                                    class="max-w-xs rounded-lg border border-gray-200 shadow-sm hover:opacity-90">
-                                                            </a>
-                                                        @else
-                                                            <div class="flex items-center justify-between
-                                                                        bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                                                                <div class="flex items-center space-x-2 text-xs text-gray-700 truncate">
-                                                                    <span>📎</span>
-                                                                    <span class="truncate">{{ $anexo->nome_original }}</span>
-                                                                    <span class="text-gray-400">({{ $sizeMb }} MB)</span>
-                                                                </div>
-                                                                <a href="{{ route('anexos.ver', $anexo) }}"
-                                                                target="_blank"
-                                                                class="text-indigo-600 hover:underline text-xs">
-                                                                    Download
-                                                                </a>
-                                                            </div>
-                                                        @endif
-                                                    @endforeach
-                                                </div>
-                                            @endif
-                                            <div class="mt-1 text-[11px] text-gray-500 flex justify-end">
-                                                <span>{{ $mensagem->created_at->format('H:i') }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endif
-                        @endif
+                        </div>
                     @empty
                         <p class="text-center text-gray-500 text-sm italic">Nenhuma mensagem ainda.</p>
                     @endforelse
@@ -438,7 +478,6 @@
                 @if ($conversaAtiva)
                     <form wire:submit="enviarMensagem" class="flex items-center space-x-3">
                         @csrf
-                        <!-- Botão de anexos -->
                         <label class="cursor-pointer flex items-center justify-center
                                     w-9 h-9 rounded-md bg-white border border-gray-300
                                     hover:bg-gray-50">
@@ -504,64 +543,162 @@
                 @endif
             </div>
         </section>
-        {{-- Sidebar direita — Membros do grupo --}}
-            @if ($mostrarMembrosGrupo && $membrosGrupo)
-                <aside class="w-64 bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">
-                        Membros do Grupo ({{ $membrosGrupo->count() }})
-                    </h3>
-                    <ul class="space-y-2">
-                        @foreach ($membrosGrupo as $membro)
-                            <li class="flex items-center space-x-2">
-                                @if ($membro->avatar_url_public)
-                                    <img src="{{ $membro->avatar_url_public }}"
-                                        class="w-7 h-7 rounded-full object-cover">
-                                @else
-                                    <div class="w-7 h-7 rounded-full bg-gray-400 text-white flex items-center justify-center text-xs">
-                                        {{ strtoupper(mb_substr($membro->nome, 0, 2)) }}
-                                    </div>
-                                @endif
-                                <span class="text-sm text-gray-800 flex-1">
-                                    {{ $membro->nome }}
+        @if ($mostrarMembrosGrupo && $membrosGrupo)
+            <aside class="w-64 bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                    Membros do Grupo ({{ $membrosGrupo->count() }})
+                </h3>
+                @if ($this->userPodeGerirMembros())
+                    <button wire:click.stop.prevent="abrirAdicionarMembro" class="text-sm text-indigo-600 hover:underline mb-3">
+                        Adicionar membro
+                    </button>
+                @endif
+                <ul class="space-y-2">
+                    @foreach ($membrosGrupo as $membro)
+                        <li wire:key="membro-{{ $membro->id }}" class="flex items-center space-x-2">
+                            @if ($membro->avatar_url_public)
+                                <img src="{{ $membro->avatar_url_public }}"
+                                    class="w-7 h-7 rounded-full object-cover">
+                            @else
+                                <div class="w-7 h-7 rounded-full bg-gray-400 text-white flex items-center justify-center text-xs">
+                                    {{ strtoupper(mb_substr($membro->nome, 0, 2)) }}
+                                </div>
+                            @endif
+                            <span class="text-sm text-gray-800 flex-1">
+                                {{ $membro->nome }}
+                            </span>
+                            @php
+                                $role = $membro->pivot->role ?? 'member';
+                                $badge = $role === 'moderator' ? 'Moderador' : 'Membro';
+                                $grupo = $conversaAtiva->grupo;
+                                $isCriador = (int)$grupo->criador_id === (int)$membro->id;
+                                $isSystemAdmin = optional($membro->tipoUtilizador)->nome === 'Administrador';
+                                $isBloqueado = $isCriador || $isSystemAdmin;
+                            @endphp
+                            @if (!$this->userPodeGerirMembros())
+                                <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">
+                                    {{ $badge }}
                                 </span>
-                                @if ($membro->pivot->is_admin ?? false)
+                            @else
+                                @if ($isBloqueado)
                                     <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">
-                                        Admin
+                                        Moderador
                                     </span>
+                                    <span class="text-xs text-gray-500 ml-1">🔒</span>
+                                @else
+                                    <select wire:change.stop="definirRoleMembro({{ $membro->id }}, $event.target.value)" class="text-xs">
+                                        <option value="member" {{ $role === 'member' ? 'selected' : '' }}>Membro</option>
+                                        <option value="moderator" {{ $role === 'moderator' ? 'selected' : '' }}>Moderador</option>
+                                    </select>
+                                    <button type="button" wire:click.stop.prevent="removerMembroDoGrupo({{ $membro->id }})" class="text-red-500 hover:text-red-700 text-xs">
+                                        Remover
+                                    </button>
                                 @endif
-                            </li>
-                        @endforeach
-                    </ul>
-                </aside>
-            @endif
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </aside>
+        @endif
     </div>
-</div>
-<script>
-    (function () {
-        let currentSubscription = null;
-        function subscribeToConversa(conversaId) {
-            if (!conversaId || !window.Echo) return;
-            if (currentSubscription) {
-                try { window.Echo.leave(currentSubscription); } catch (e) {}
-                currentSubscription = null;
+
+@if ($mostrarEditarGrupo)
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-lg font-semibold mb-4">Editar Grupo</h2>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Nome do Grupo</label>
+                <input type="text" wire:model.defer="novoNomeGrupo"
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Foto do Grupo</label>
+                <input type="file" wire:model="fotoGrupoUpload" class="mt-1 block w-full">
+            </div>
+
+            <div class="flex justify-end space-x-2">
+                <button type="button"
+                        wire:click="guardarGrupo"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md">
+                    Guardar
+                </button>
+
+                <button type="button"
+                        wire:click="cancelarEditarGrupo"
+                        class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if ($mostrarAdicionarMembro)
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-lg font-semibold mb-4">Adicionar Membro</h2>
+            <select wire:model="selectedUserToAdd" class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 mb-4">
+                <option value="">Selecione um utilizador</option>
+                @foreach ($usersDisponiveisAdicionar as $u)
+                    <option value="{{ $u->id }}">{{ $u->nome }} ({{ $u->email }})</option>
+                @endforeach
+            </select>
+            <div class="flex justify-end space-x-2">
+                <button type="button" wire:click.stop.prevent="adicionarMembroSelecionado" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md">
+                    Adicionar
+                </button>
+                <button type="button" wire:click.stop.prevent="fecharAdicionarMembro" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+@endif
+
+@once
+    <script>
+        // o teu JS aqui (igual), mas dentro do root do componente
+        (function () {
+            let currentSubscription = null;
+            function subscribeToConversa(conversaId) {
+                if (!conversaId || !window.Echo) return;
+                if (currentSubscription) {
+                    try { window.Echo.leave(currentSubscription); } catch (e) {}
+                    currentSubscription = null;
+                }
+                currentSubscription = `conversa.${conversaId}`;
+                window.Echo.private(`conversa.${conversaId}`)
+                    .listen('.mensagem.nova', (e) => {
+                        if (window.Livewire) {
+                            window.Livewire.dispatch('mensagemRecebidaRealtime', e);
+                        }
+                    });
             }
-            const channelName = `private-conversa.${conversaId}`;
-            currentSubscription = `conversa.${conversaId}`;
-            window.Echo.private(`conversa.${conversaId}`)
-                .listen('.mensagem.nova', (e) => {
-                    if (window.Livewire) {
-                        window.Livewire.dispatch('mensagemRecebidaRealtime', e);
-                    }
+            document.addEventListener('livewire:init', () => {
+                Livewire.on('conversa-selecionada', (data) => {
+                    subscribeToConversa(data.conversaId);
                 });
-        }
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('conversa-selecionada', (data) => {
-                subscribeToConversa(data.conversaId);
+                Livewire.on('scroll-chat-para-fundo', () => {
+                    const container = document.querySelector('.overflow-y-auto');
+                    if (container) container.scrollTop = container.scrollHeight;
+                });
+                Livewire.on('scroll-to-message', ({ messageId }) => {
+                    const el = document.getElementById('msg-' + messageId);
+                    if (!el) return;
+                    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    el.classList.add('bg-yellow-50');
+                    setTimeout(() => el.classList.remove('bg-yellow-50'), 2000);
+                    // Limpa o ring amarelo após 3 segundos
+                    setTimeout(() => {
+                        if (window.Livewire) {
+                            window.Livewire.dispatch('clearHighlight');
+                        }
+                    }, 3000);
+                });
             });
-            Livewire.on('scroll-chat-para-fundo', () => {
-                const container = document.querySelector('main .overflow-y-auto');
-                if (container) container.scrollTop = container.scrollHeight;
-            });
-        });
-    })();
-</script>
+        })();
+    </script>
+@endonce
+</div>
