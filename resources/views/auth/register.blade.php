@@ -2,10 +2,10 @@
     <div class="w-full">
         {{-- Cabeçalho --}}
         <div class="mb-8 text-center">
-            <h1 class="text-2xl font-semibold text-gray-900">
+            <h1 class="text-2xl font-semibold text-white">
                 Criar conta
             </h1>
-            <p class="mt-1 text-sm text-gray-500">
+            <p class="mt-1 text-sm text-white/65">
                 Regista-te para começar a usar o Communico
             </p>
         </div>
@@ -15,7 +15,7 @@
 
             <!-- Nome -->
             <div>
-                <x-input-label for="nome" :value="__('Name')" />
+                <x-input-label for="nome" :value="__('Name')" class="text-white/80" />
 
                 <x-text-input
                     id="nome"
@@ -25,12 +25,8 @@
                     required
                     autofocus
                     autocomplete="name"
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
                 <x-input-error :messages="$errors->get('nome')" class="mt-2" />
@@ -38,7 +34,7 @@
 
             <!-- Email -->
             <div>
-                <x-input-label for="email" :value="__('Email')" />
+                <x-input-label for="email" :value="__('Email')" class="text-white/80" />
 
                 <x-text-input
                     id="email"
@@ -47,12 +43,8 @@
                     :value="old('email')"
                     required
                     autocomplete="username"
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
@@ -60,7 +52,7 @@
 
             <!-- Password -->
             <div>
-                <x-input-label for="password" :value="__('Password')" />
+                <x-input-label for="password" :value="__('Password')" class="text-white/80" />
 
                 <x-text-input
                     id="password"
@@ -68,12 +60,8 @@
                     name="password"
                     required
                     autocomplete="new-password"
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
@@ -81,7 +69,7 @@
 
             <!-- Confirm Password -->
             <div>
-                <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+                <x-input-label for="password_confirmation" :value="__('Confirm Password')" class="text-white/80" />
 
                 <x-text-input
                     id="password_confirmation"
@@ -89,26 +77,19 @@
                     name="password_confirmation"
                     required
                     autocomplete="new-password"
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
+
+                <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
             </div>
 
             <!-- Actions -->
             <div class="flex items-center justify-between pt-2">
                 <a
                     href="{{ route('login') }}"
-                    class="text-sm font-medium
-                           text-gray-600
-                           hover:text-brand-secondary
-                           focus:outline-none focus:ring-2
-                           focus:ring-offset-2
-                           focus:ring-brand-secondary
-                           rounded-md"
+                    class="text-sm font-semibold hover:underline"
+                    style="color: rgba(96,165,250,.95);"
                 >
                     {{ __('Already registered?') }}
                 </a>

@@ -2,10 +2,10 @@
     <div class="w-full">
         {{-- Cabeçalho --}}
         <div class="mb-8 text-center">
-            <h1 class="text-2xl font-semibold text-gray-900">
+            <h1 class="text-2xl font-semibold text-white">
                 Redefinir palavra-passe
             </h1>
-            <p class="mt-2 text-sm text-gray-500">
+            <p class="mt-2 text-sm text-white/65">
                 Introduz uma nova palavra-passe para a tua conta.
             </p>
         </div>
@@ -18,7 +18,7 @@
 
             <!-- Email -->
             <div>
-                <x-input-label for="email" :value="__('Email')" />
+                <x-input-label for="email" :value="__('Email')" class="text-white/80" />
 
                 <x-text-input
                     id="email"
@@ -28,12 +28,8 @@
                     required
                     autofocus
                     autocomplete="username"
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
@@ -41,7 +37,7 @@
 
             <!-- Password -->
             <div>
-                <x-input-label for="password" :value="__('Password')" />
+                <x-input-label for="password" :value="__('Password')" class="text-white/80" />
 
                 <x-text-input
                     id="password"
@@ -49,12 +45,8 @@
                     name="password"
                     required
                     autocomplete="new-password"
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
@@ -62,7 +54,7 @@
 
             <!-- Confirm Password -->
             <div>
-                <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+                <x-input-label for="password_confirmation" :value="__('Confirm Password')" class="text-white/80" />
 
                 <x-text-input
                     id="password_confirmation"
@@ -70,12 +62,8 @@
                     name="password_confirmation"
                     required
                     autocomplete="new-password"
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
                 <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />

@@ -1,123 +1,114 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="font-semibold text-xl leading-tight text-white">
             Nova resposta automática
         </h2>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-10">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
+
+            <div class="comm-card rounded-2xl overflow-hidden">
+                <div class="p-6 sm:p-8 text-white/90">
 
                     {{-- Título --}}
-                    <div class="mb-6">
-                        <h3 class="text-xl font-bold">
+                    <div class="mb-8">
+                        <div class="text-xs tracking-wide text-white/55 uppercase">
+                            Administração
+                        </div>
+                        <h3 class="mt-1 text-2xl font-semibold text-white">
                             Configuração da resposta automática
                         </h3>
-                        <p class="mt-1 text-sm text-gray-600">
+                        <p class="mt-2 text-sm text-white/65">
                             Define as regras e o conteúdo da resposta automática.
                         </p>
                     </div>
 
-                    <form method="POST" action="{{ route('admin.auto-replies.store') }}">
+                    <form method="POST" action="{{ route('admin.auto-replies.store') }}" class="space-y-6">
                         @csrf
 
-                        <!-- Disparador -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700">
-                                Disparador
-                            </label>
-
-                            <input
+                        {{-- Disparador --}}
+                        <div>
+                            <x-input-label for="trigger" :value="__('Disparador')" class="text-white/80" />
+                            <x-text-input
+                                id="trigger"
                                 type="text"
                                 name="trigger"
-                                value="{{ old('trigger') }}"
-                                class="mt-1 block w-full rounded-md border-gray-300
-                                       shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                :value="old('trigger')"
+                                class="mt-1 block w-full bg-white/5 text-white border-white/10
+                                       placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                                 placeholder="Ex.: horário, ajuda, contacto"
-                            >
-
-                            @error('trigger')
-                                <p class="text-red-600 text-xs mt-1">
-                                    {{ $message }}
-                                </p>
-                            @enderror
+                            />
+                            <x-input-error :messages="$errors->get('trigger')" class="mt-2" />
                         </div>
 
-                        <!-- Resposta -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700">
-                                Resposta automática
-                            </label>
-
+                        {{-- Resposta --}}
+                        <div>
+                            <x-input-label for="response" :value="__('Resposta automática')" class="text-white/80" />
                             <textarea
+                                id="response"
                                 name="response"
                                 rows="4"
-                                class="mt-1 block w-full rounded-md border-gray-300
-                                       shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                placeholder="Texto que será enviado automaticamente quando o disparador for detetado"
+                                class="mt-1 block w-full rounded-xl border bg-white/5 text-white
+                                       placeholder-white/40 focus:ring-0 focus:border-white/20"
+                                style="border-color: rgba(255,255,255,.10);"
+                                placeholder="Texto enviado automaticamente quando o disparador for detetado"
                             >{{ old('response') }}</textarea>
-
-                            @error('response')
-                                <p class="text-red-600 text-xs mt-1">
-                                    {{ $message }}
-                                </p>
-                            @enderror
+                            <x-input-error :messages="$errors->get('response')" class="mt-2" />
                         </div>
 
-                        <!-- Prioridade e estado -->
-                        <div class="grid grid-cols-2 gap-4 mb-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">
-                                    Prioridade
-                                </label>
+                        <div class="border-t pt-6" style="border-color: rgba(255,255,255,.10);"></div>
 
-                                <input
+                        {{-- Prioridade e estado --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <x-input-label for="priority" :value="__('Prioridade')" class="text-white/80" />
+                                <x-text-input
+                                    id="priority"
                                     type="number"
                                     name="priority"
-                                    value="{{ old('priority', 0) }}"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                >
+                                    :value="old('priority', 0)"
+                                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
+                                />
+                                <x-input-error :messages="$errors->get('priority')" class="mt-2" />
                             </div>
 
-                            <div class="flex items-center mt-6">
+                            <div class="flex items-center gap-3 sm:pt-7">
                                 <input
+                                    id="active"
                                     type="checkbox"
                                     name="active"
                                     value="1"
                                     checked
-                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    class="h-4 w-4 rounded border-white/20 bg-transparent focus:ring-0"
+                                    style="accent-color: rgb(45, 212, 191);"
                                 >
-                                <span class="ml-2 text-sm text-gray-700">
+                                <label for="active" class="text-sm font-semibold text-white/80">
                                     Ativa
-                                </span>
+                                </label>
                             </div>
                         </div>
 
-                        <!-- Ações -->
-                        <div class="flex justify-end space-x-3">
+                        {{-- Ações --}}
+                        <div class="flex items-center justify-end gap-4 pt-2">
                             <a
                                 href="{{ route('admin.auto-replies.index') }}"
-                                class="bg-gray-200 hover:bg-gray-300 text-gray-800
-                                       px-4 py-2 rounded"
+                                class="text-sm font-semibold text-white/70 hover:text-white hover:underline"
                             >
                                 Cancelar
                             </a>
 
-                            <button
-                                type="submit"
-                                class="bg-indigo-600 hover:bg-indigo-700
-                                       text-white px-4 py-2 rounded"
-                            >
+                            <x-primary-button>
                                 Guardar
-                            </button>
+                            </x-primary-button>
                         </div>
 
                     </form>
 
                 </div>
             </div>
+
         </div>
     </div>
 </x-app-layout>

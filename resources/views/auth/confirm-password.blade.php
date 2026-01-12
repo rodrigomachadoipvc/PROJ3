@@ -2,10 +2,10 @@
     <div class="w-full">
         {{-- Cabeçalho --}}
         <div class="mb-8 text-center">
-            <h1 class="text-2xl font-semibold text-gray-900">
+            <h1 class="text-2xl font-semibold text-white">
                 Confirmar palavra-passe
             </h1>
-            <p class="mt-2 text-sm text-gray-500">
+            <p class="mt-2 text-sm text-white/65">
                 {{ __('This is a secure area of the application. Please confirm your password before continuing.') }}
             </p>
         </div>
@@ -15,7 +15,7 @@
 
             <!-- Password -->
             <div>
-                <x-input-label for="password" :value="__('Password')" />
+                <x-input-label for="password" :value="__('Password')" class="text-white/80" />
 
                 <x-text-input
                     id="password"
@@ -23,12 +23,8 @@
                     name="password"
                     required
                     autocomplete="current-password"
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />

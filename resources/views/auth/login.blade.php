@@ -5,10 +5,10 @@
     <div class="w-full">
         {{-- Cabeçalho --}}
         <div class="mb-8 text-center">
-            <h1 class="text-2xl font-semibold text-gray-900">
+            <h1 class="text-2xl font-semibold text-white">
                 Entrar
             </h1>
-            <p class="mt-1 text-sm text-gray-500">
+            <p class="mt-1 text-sm text-white/65">
                 Acede à tua conta Communico
             </p>
         </div>
@@ -18,7 +18,7 @@
 
             <!-- Email -->
             <div>
-                <x-input-label for="email" :value="__('Email')" />
+                <x-input-label for="email" :value="__('Email')" class="text-white/80" />
 
                 <x-text-input
                     id="email"
@@ -28,12 +28,8 @@
                     required
                     autofocus
                     autocomplete="username"
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
@@ -41,7 +37,7 @@
 
             <!-- Password -->
             <div>
-                <x-input-label for="password" :value="__('Password')" />
+                <x-input-label for="password" :value="__('Password')" class="text-white/80" />
 
                 <x-text-input
                     id="password"
@@ -49,12 +45,8 @@
                     name="password"
                     required
                     autocomplete="current-password"
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
@@ -67,11 +59,10 @@
                         id="remember_me"
                         type="checkbox"
                         name="remember"
-                        class="rounded border-gray-300
-                               text-brand-secondary
-                               focus:ring-brand-secondary"
+                        class="h-4 w-4 rounded border-white/20 bg-transparent focus:ring-0"
+                        style="accent-color: rgb(45, 212, 191);"
                     >
-                    <span class="ms-2 text-sm text-gray-600">
+                    <span class="ms-2 text-sm text-white/70">
                         {{ __('Remember me') }}
                     </span>
                 </label>
@@ -79,13 +70,8 @@
                 @if (Route::has('password.request'))
                     <a
                         href="{{ route('password.request') }}"
-                        class="text-sm font-medium
-                               text-gray-600
-                               hover:text-brand-secondary
-                               focus:outline-none focus:ring-2
-                               focus:ring-offset-2
-                               focus:ring-brand-secondary
-                               rounded-md"
+                        class="text-sm font-semibold hover:underline"
+                        style="color: rgba(96,165,250,.95);"
                     >
                         {{ __('Forgot your password?') }}
                     </a>

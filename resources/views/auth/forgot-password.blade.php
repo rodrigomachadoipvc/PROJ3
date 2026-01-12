@@ -2,10 +2,10 @@
     <div class="w-full">
         {{-- Cabeçalho --}}
         <div class="mb-8 text-center">
-            <h1 class="text-2xl font-semibold text-gray-900">
+            <h1 class="text-2xl font-semibold text-white">
                 Recuperar palavra-passe
             </h1>
-            <p class="mt-2 text-sm text-gray-500">
+            <p class="mt-2 text-sm text-white/65">
                 {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
             </p>
         </div>
@@ -18,7 +18,7 @@
 
             <!-- Email -->
             <div>
-                <x-input-label for="email" :value="__('Email')" />
+                <x-input-label for="email" :value="__('Email')" class="text-white/80" />
 
                 <x-text-input
                     id="email"
@@ -27,12 +27,8 @@
                     :value="old('email')"
                     required
                     autofocus
-                    class="mt-1 block w-full
-                           rounded-lg
-                           bg-gray-50 border border-gray-300
-                           focus:bg-white
-                           focus:border-brand-secondary
-                           focus:ring-brand-secondary"
+                    class="mt-1 block w-full bg-white/5 text-white border-white/10
+                           placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
