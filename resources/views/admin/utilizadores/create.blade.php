@@ -1,83 +1,166 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Adicionar Novo Utilizador') }}
+        <h2 class="font-semibold text-xl leading-tight text-white">
+            Criar utilizador
         </h2>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    
-                    <h3 class="text-xl font-bold mb-6">{{ __('Detalhes do Novo Utilizador') }}</h3>
+    <div class="py-10">
+        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
 
-                    <!-- Formulário de Criação -->
-                    <form method="POST" action="{{ route('admin.utilizadores.store') }}">
+            <div class="comm-card rounded-2xl overflow-hidden">
+                <div class="p-6 sm:p-8 text-white/90">
+
+                    {{-- Título --}}
+                    <div class="mb-8">
+                        <div class="text-xs tracking-wide text-white/55 uppercase">
+                            Administração
+                        </div>
+                        <h3 class="mt-1 text-2xl font-semibold text-white">
+                            Detalhes do novo utilizador
+                        </h3>
+                        <p class="mt-2 text-sm text-white/65">
+                            Preenche os dados base, define o tipo de utilizador e o estado inicial da conta.
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ route('admin.utilizadores.store') }}" class="space-y-6">
                         @csrf
 
-                        <!-- Nome Completo -->
-                        <div class="mb-4">
-                            <x-input-label for="nome" :value="__('Nome Completo')" />
-                            <x-text-input id="nome" class="block mt-1 w-full" type="text" name="nome" :value="old('nome')" required autofocus />
+                        {{-- Nome --}}
+                        <div>
+                            <x-input-label for="nome" :value="__('Nome completo')" class="text-white/80" />
+                            <x-text-input
+                                id="nome"
+                                type="text"
+                                name="nome"
+                                :value="old('nome')"
+                                required
+                                autofocus
+                                class="mt-1 block w-full bg-white/5 text-white border-white/10
+                                       placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
+                            />
                             <x-input-error :messages="$errors->get('nome')" class="mt-2" />
                         </div>
 
-                        <!-- Email -->
-                        <div class="mb-4">
-                            <x-input-label for="email" :value="__('Endereço de Email')" />
-                            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required />
+                        {{-- Email --}}
+                        <div>
+                            <x-input-label for="email" :value="__('Endereço de email')" class="text-white/80" />
+                            <x-text-input
+                                id="email"
+                                type="email"
+                                name="email"
+                                :value="old('email')"
+                                required
+                                class="mt-1 block w-full bg-white/5 text-white border-white/10
+                                       placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
+                            />
                             <x-input-error :messages="$errors->get('email')" class="mt-2" />
                         </div>
 
-                        <!-- Password -->
-                        <div class="mb-4">
-                            <x-input-label for="password" :value="__('Password (mín. 8 caracteres, 1 maiúscula, 1 número, 1 símbolo)')" />
-                            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
+                        {{-- Password --}}
+                        <div>
+                            <x-input-label for="password" :value="__('Password')" class="text-white/80" />
+                            <p class="mt-1 text-xs text-white/55">
+                                Mínimo 8 caracteres, incluindo uma letra maiúscula, um número e um símbolo.
+                            </p>
+
+                            <x-text-input
+                                id="password"
+                                type="password"
+                                name="password"
+                                required
+                                autocomplete="new-password"
+                                class="mt-2 block w-full bg-white/5 text-white border-white/10
+                                       placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
+                            />
                             <x-input-error :messages="$errors->get('password')" class="mt-2" />
                         </div>
 
-                        <!-- Confirmação de Password -->
-                        <div class="mb-6">
-                            <x-input-label for="password_confirmation" :value="__('Confirmar Password')" />
-                            <x-text-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" required />
+                        {{-- Confirmar Password --}}
+                        <div>
+                            <x-input-label for="password_confirmation" :value="__('Confirmar password')" class="text-white/80" />
+                            <x-text-input
+                                id="password_confirmation"
+                                type="password"
+                                name="password_confirmation"
+                                required
+                                class="mt-1 block w-full bg-white/5 text-white border-white/10
+                                       placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
+                            />
                             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
                         </div>
 
-                        <!-- Tipo de Utilizador (Dropdown/Select) -->
-                        <div class="mb-6">
-                            <x-input-label for="tipo_utilizador_id" :value="__('Tipo de Utilizador (Role)')" />
-                            <select id="tipo_utilizador_id" name="tipo_utilizador_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                                <option value="">-- Selecione um Tipo --</option>
+                        <div class="border-t pt-6" style="border-color: rgba(255,255,255,.10);"></div>
+
+                        {{-- Tipo de utilizador --}}
+                        <div>
+                            <x-input-label for="tipo_utilizador_id" :value="__('Tipo de utilizador')" class="text-white/80" />
+
+                            <select
+                                id="tipo_utilizador_id"
+                                name="tipo_utilizador_id"
+                                required
+                                class="mt-1 block w-full rounded-xl border bg-white/5 text-white
+                                       focus:ring-0 focus:border-white/20"
+                                style="border-color: rgba(255,255,255,.10);"
+                            >
+                                <option value="" class="bg-slate-900">Selecionar tipo</option>
                                 @foreach ($tiposUtilizador as $tipo)
-                                    <option value="{{ $tipo->id }}" {{ old('tipo_utilizador_id') == $tipo->id ? 'selected' : '' }}>
+                                    <option
+                                        value="{{ $tipo->id }}"
+                                        class="bg-slate-900"
+                                        {{ old('tipo_utilizador_id') == $tipo->id ? 'selected' : '' }}
+                                    >
                                         {{ $tipo->nome }}
                                     </option>
                                 @endforeach
                             </select>
+
                             <x-input-error :messages="$errors->get('tipo_utilizador_id')" class="mt-2" />
                         </div>
 
-                        <!-- Status (Opcional - Pode ser 'ativo' por padrão) -->
-                         <div class="mb-6">
-                            <x-input-label for="status" :value="__('Status Inicial')" />
-                            <select id="status" name="status" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                                <option value="ativo" {{ old('status', 'ativo') == 'ativo' ? 'selected' : '' }}>Ativo</option>
-                                <option value="inativo" {{ old('status') == 'inativo' ? 'selected' : '' }}>Inativo</option>
+                        {{-- Estado --}}
+                        <div>
+                            <x-input-label for="status" :value="__('Estado inicial da conta')" class="text-white/80" />
+
+                            <select
+                                id="status"
+                                name="status"
+                                required
+                                class="mt-1 block w-full rounded-xl border bg-white/5 text-white
+                                       focus:ring-0 focus:border-white/20"
+                                style="border-color: rgba(255,255,255,.10);"
+                            >
+                                <option value="ativo" class="bg-slate-900" {{ old('status', 'ativo') === 'ativo' ? 'selected' : '' }}>
+                                    Ativo
+                                </option>
+                                <option value="inativo" class="bg-slate-900" {{ old('status') === 'inativo' ? 'selected' : '' }}>
+                                    Inativo
+                                </option>
                             </select>
+
                             <x-input-error :messages="$errors->get('status')" class="mt-2" />
                         </div>
-                        
-                        <div class="flex items-center justify-end mt-4">
-                            <a href="{{ route('admin.utilizadores.index') }}" class="text-gray-600 hover:text-gray-900 mr-4">{{ __('Cancelar') }}</a>
+
+                        {{-- Ações --}}
+                        <div class="flex items-center justify-end gap-4 pt-4">
+                            <a
+                                href="{{ route('admin.utilizadores.index') }}"
+                                class="text-sm font-semibold text-white/70 hover:text-white hover:underline"
+                            >
+                                Cancelar
+                            </a>
+
                             <x-primary-button>
-                                {{ __('Guardar Utilizador') }}
+                                Guardar utilizador
                             </x-primary-button>
                         </div>
                     </form>
 
                 </div>
             </div>
+
         </div>
     </div>
 </x-app-layout>

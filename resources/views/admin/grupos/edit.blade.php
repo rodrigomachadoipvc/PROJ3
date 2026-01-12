@@ -1,46 +1,79 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Editar Grupo de Chat') }}: {{ $grupo->nome }}
+        <h2 class="font-semibold text-xl leading-tight text-white">
+            Editar grupo de chat: {{ $grupo->nome }}
         </h2>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    
-                    <h3 class="text-xl font-bold mb-6">{{ __('Detalhes do Grupo') }}</h3>
+    <div class="py-10">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
 
-                    <!-- Formulário de Edição -->
-                    <form method="POST" action="{{ route('admin.grupos.update', $grupo->id) }}">
+            <div class="comm-card rounded-2xl overflow-hidden">
+                <div class="p-6 sm:p-8 text-white/90">
+
+                    <div class="mb-8">
+                        <div class="text-xs tracking-wide text-white/55 uppercase">
+                            Administração
+                        </div>
+                        <h3 class="mt-1 text-2xl font-semibold text-white">
+                            Detalhes do grupo
+                        </h3>
+                        <p class="mt-2 text-sm text-white/65">
+                            Atualiza as informações do grupo de chat.
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ route('admin.grupos.update', $grupo->id) }}" class="space-y-8">
                         @csrf
                         @method('PUT')
 
-                        <!-- Nome do Grupo -->
-                        <div class="mb-4">
-                            <x-input-label for="nome" :value="__('Nome do Grupo')" />
-                            <x-text-input id="nome" class="block mt-1 w-full" type="text" name="nome" :value="old('nome', $grupo->nome)" required autofocus />
+                        {{-- Nome --}}
+                        <div>
+                            <x-input-label for="nome" :value="__('Nome do grupo')" class="text-white/80" />
+                            <x-text-input
+                                id="nome"
+                                type="text"
+                                name="nome"
+                                :value="old('nome', $grupo->nome)"
+                                required
+                                autofocus
+                                class="mt-1 block w-full bg-white/5 text-white border-white/10
+                                       placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
+                            />
                             <x-input-error :messages="$errors->get('nome')" class="mt-2" />
                         </div>
 
-                        <!-- Descrição -->
-                        <div class="mb-6">
-                            <x-input-label for="descricao" :value="__('Descrição (Opcional)')" />
-                            <textarea id="descricao" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" name="descricao">{{ old('descricao', $grupo->descricao) }}</textarea>
+                        {{-- Descrição --}}
+                        <div>
+                            <x-input-label for="descricao" :value="__('Descrição (opcional)')" class="text-white/80" />
+                            <textarea
+                                id="descricao"
+                                name="descricao"
+                                rows="4"
+                                class="mt-1 block w-full rounded-xl border bg-white/5 text-white
+                                       placeholder-white/40 focus:ring-0 focus:border-white/20"
+                                style="border-color: rgba(255,255,255,.10);"
+                            >{{ old('descricao', $grupo->descricao) }}</textarea>
                             <x-input-error :messages="$errors->get('descricao')" class="mt-2" />
                         </div>
-                        
-                        <div class="flex items-center justify-end mt-4">
-                            <a href="{{ route('admin.grupos.index') }}" class="text-gray-600 hover:text-gray-900 mr-4">{{ __('Cancelar') }}</a>
+
+                        <div class="flex items-center justify-end gap-4 pt-2">
+                            <a
+                                href="{{ route('admin.grupos.index') }}"
+                                class="text-sm font-semibold text-white/70 hover:text-white hover:underline"
+                            >
+                                Cancelar
+                            </a>
+
                             <x-primary-button>
-                                {{ __('Guardar Alterações') }}
+                                Guardar alterações
                             </x-primary-button>
                         </div>
                     </form>
 
                 </div>
             </div>
+
         </div>
     </div>
 </x-app-layout>

@@ -25,10 +25,11 @@
     >
 @else
     <div
-        class="rounded-full bg-indigo-600 text-white flex items-center justify-center font-semibold shadow-sm {{ $sizeConfig['text'] }}"
+        class="rounded-full text-white flex items-center justify-center font-semibold shadow-sm {{ $sizeConfig['text'] }}"
         style="
             width: {{ $sizeConfig['w'] }};
             height: {{ $sizeConfig['h'] }};
+            background: linear-gradient(135deg, var(--c-a1), var(--c-a2));
         "
         aria-label="Avatar {{ $user->initials }}"
     >

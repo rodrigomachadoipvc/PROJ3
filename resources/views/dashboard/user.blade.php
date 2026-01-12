@@ -1,130 +1,309 @@
 <x-app-layout>
-    <div class="max-w-7xl mx-auto px-6 py-8">
+    @php
+        $user = Auth::user();
 
-        @php
-            $user = Auth::user();
-            $avatar = $user->avatar_url_public;
-            $initials = $user->initials;
-        @endphp
+        // Nota: na tua app o campo é "nome" (não "name")
+        $nome = $user->nome ?? $user->name ?? 'Utilizador';
 
-        {{-- Cabeçalho --}}
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">
-                Olá, {{ $user->name }}
-            </h1>
-            <p class="text-gray-600 text-sm mt-1">
-                Bem-vindo ao seu painel. Aqui encontra atalhos e atividade recente.
-            </p>
-        </div>
+        // Estatísticas (simples e úteis para utilizador normal)
+        $totalConversas = method_exists($user, 'conversas') ? $user->conversas()->count() : 0;
+        $totalGrupos    = method_exists($user, 'grupos') ? $user->grupos()->count() : 0;
 
-        {{-- Grelha Principal --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        $mensagensEnviadas= \App\Models\Mensagem::where('emissor_id', $user->id)->count();
 
-            {{-- Conversas Recentes --}}
-            <div class="bg-white shadow rounded-xl p-6 border border-gray-100">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">Conversas Recentes</h2>
+        $anexosEnviados = \App\Models\Anexo::whereHas('mensagem', function ($q) use ($user) {
+            $q->where('emissor_id', $user->id);
+        })->count();
+    @endphp
 
-                @forelse ($recentConversas as $conversa)
-                    @php 
-                        if ($conversa->tipo === 'grupo') {
-                            $titulo = $conversa->grupo?->nome ?? 'Grupo';
-                        } else {
-                            $outro = $conversa->participantes->where('id', '!=', $user->id)->first();
-                            $titulo = $outro?->nome ?? 'Conversa';
-                        }
-                        $ultima = $conversa->ultimaMensagem;
-                    @endphp
+    <x-slot name="header">
+        <div class="flex items-start justify-between gap-6">
+            <div>
+                <div class="text-xs tracking-wide text-white/55 uppercase">
+                    Painel
+                </div>
 
-                    <a href="{{ route('chat.index', ['c' => $conversa->id]) }}"
-                       class="block p-3 mb-2 rounded-lg hover:bg-gray-50 transition border border-gray-200">
+                <h2 class="mt-1 font-semibold text-xl text-white leading-tight">
+                    Olá, {{ $nome }}
+                </h2>
 
-                        <p class="font-medium text-sm text-gray-800">
-                            {{ $titulo }}
-                        </p>
-
-                        @if ($ultima)
-                            <p class="text-xs text-gray-600 mt-1 truncate">
-                                <strong>{{ $ultima->emissor_id == $user->id ? 'Tu' : $ultima->emissor?->nome }}:</strong>
-                                {{ $ultima->conteudo ?? 'Anexo' }}
-                            </p>
-
-                            <span class="text-[11px] text-gray-400">
-                                {{ $ultima->created_at->diffForHumans() }}
-                            </span>
-                        @endif
-                    </a>
-
-                @empty
-                    <p class="text-sm text-gray-500">Sem conversas recentes.</p>
-                @endforelse
+                <p class="mt-1 text-sm text-white/65">
+                    Bem-vindo ao teu painel. Aqui tens atalhos e atividade recente.
+                </p>
             </div>
 
-            {{-- Grupos --}}
-            <div class="bg-white shadow rounded-xl p-6 border border-gray-100">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">Os Seus Grupos</h2>
-
-                @forelse ($recentGrupos as $grupo)
-                    <a href="{{ route('chat.index', ['g' => $grupo->id]) }}"
-                       class="block p-3 mb-2 rounded-lg hover:bg-gray-50 transition border border-gray-200">
-
-                        <p class="font-medium text-sm text-gray-800">{{ $grupo->nome }}</p>
-
-                        <span class="text-xs text-gray-500">
-                            Entrou: {{ $grupo->pivot->created_at->format('d/m/Y') }}
-                        </span>
-                    </a>
-
-                @empty
-                    <p class="text-sm text-gray-500">Ainda não pertence a grupos.</p>
-                @endforelse
-            </div>
-
-            {{-- Perfil --}}
-            <div class="bg-white shadow rounded-xl p-6 border border-gray-100">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">A Sua Conta</h2>
-
-                <div class="flex items-center space-x-4">
-
-                    {{-- Avatar --}}
-                    @if ($avatar)
-                        <img src="{{ $avatar }}" class="w-14 h-14 rounded-full object-cover shadow">
-                    @else
-                        <div class="w-14 h-14 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xl font-semibold">
-                            {{ $initials }}
-                        </div>
-                    @endif
-
-                    <div>
-                        <p class="font-semibold text-gray-800">{{ $user->name }}</p>
-                        <p class="text-sm text-gray-500">{{ $user->email }}</p>
-
-                        <a href="{{ route('profile.edit') }}"
-                           class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                            Editar Perfil →
-                        </a>
+            <div class="hidden sm:flex items-center gap-3">
+                <x-avatar :user="$user" size="md" />
+                <div class="leading-tight">
+                    <div class="text-sm font-semibold text-white/85">
+                        {{ $nome }}
+                    </div>
+                    <div class="text-xs text-white/55">
+                        {{ $user->email }}
                     </div>
                 </div>
             </div>
+        </div>
+    </x-slot>
+
+    <div class="py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            {{-- Grelha Principal --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {{-- Conversas Recentes --}}
+                <div class="comm-card rounded-2xl overflow-hidden">
+                    <div class="p-6 sm:p-7 text-white/90">
+                        <div class="flex items-end justify-between mb-5">
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">
+                                    Conversas recentes
+                                </h3>
+                                <p class="mt-1 text-sm text-white/60">
+                                    Acede rapidamente às últimas conversas.
+                                </p>
+                            </div>
+
+                            <a
+                                href="{{ route('chat.index') }}"
+                                class="text-sm font-semibold hover:underline"
+                                style="color: var(--c-a1);"
+                            >
+                                Ver chat →
+                            </a>
+                        </div>
+
+                        <div class="space-y-3">
+                            @forelse ($recentConversas as $conversa)
+                                @php
+                                    $outro = $conversa->participantes->where('id', '!=', $user->id)->first();
+                                    $ultima = $conversa->ultimaMensagem;
+
+                                    $nomeOutro = $outro->nome ?? $outro->name ?? 'Conversa';
+                                    $isMine = $ultima && ($ultima->emissor_id == $user->id);
+                                    $emissorNome = $isMine ? 'Tu' : ($ultima->emissor?->nome ?? $ultima->emissor?->name ?? '—');
+                                    $textoUltima = $ultima ? ($ultima->conteudo ?? 'Anexo') : null;
+                                @endphp
+
+                                <a
+                                    href="{{ route('chat.index', ['c' => $conversa->id]) }}"
+                                    class="block rounded-xl border px-4 py-3 transition"
+                                    style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.02);"
+                                    onmouseover="this.style.background='rgba(255,255,255,.05)'"
+                                    onmouseout="this.style.background='rgba(255,255,255,.02)'"
+                                >
+                                    <div class="flex items-start justify-between gap-4">
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-semibold text-white/90 truncate">
+                                                {{ $nomeOutro }}
+                                            </div>
+
+                                            @if ($ultima)
+                                                <div class="mt-1 text-xs text-white/65 truncate">
+                                                    <span class="font-semibold text-white/75">{{ $emissorNome }}:</span>
+                                                    {{ $textoUltima }}
+                                                </div>
+                                            @else
+                                                <div class="mt-1 text-xs text-white/55">
+                                                    Sem mensagens ainda.
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        @if ($ultima)
+                                            <div class="text-[11px] text-white/45 whitespace-nowrap">
+                                                {{ $ultima->created_at->diffForHumans() }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </a>
+                            @empty
+                                <div class="rounded-xl border px-4 py-4 text-sm text-white/60"
+                                     style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.02);">
+                                    Sem conversas recentes.
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Grupos --}}
+                <div class="comm-card rounded-2xl overflow-hidden">
+                    <div class="p-6 sm:p-7 text-white/90">
+                        <div class="flex items-end justify-between mb-5">
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">
+                                    Os teus grupos
+                                </h3>
+                                <p class="mt-1 text-sm text-white/60">
+                                    Conversas em equipa e projetos.
+                                </p>
+                            </div>
+
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+                                  style="border-color: rgba(45,212,191,.25); background: rgba(45,212,191,.10); color: rgba(167,243,208,.95);">
+                                {{ $totalGrupos }} total
+                            </span>
+                        </div>
+
+                        <div class="space-y-3">
+                            @forelse ($recentGrupos as $grupo)
+                                <a
+                                    href="{{ route('chat.index', ['g' => $grupo->id]) }}"
+                                    class="block rounded-xl border px-4 py-3 transition"
+                                    style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.02);"
+                                    onmouseover="this.style.background='rgba(255,255,255,.05)'"
+                                    onmouseout="this.style.background='rgba(255,255,255,.02)'"
+                                >
+                                    <div class="flex items-start justify-between gap-4">
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-semibold text-white/90 truncate">
+                                                {{ $grupo->nome }}
+                                            </div>
+
+                                            @if(isset($grupo->pivot?->created_at))
+                                                <div class="mt-1 text-xs text-white/55">
+                                                    Entraste: {{ $grupo->pivot->created_at->format('d/m/Y') }}
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        <span class="text-[11px] text-white/45 whitespace-nowrap">
+                                            Abrir →
+                                        </span>
+                                    </div>
+                                </a>
+                            @empty
+                                <div class="rounded-xl border px-4 py-4 text-sm text-white/60"
+                                     style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.02);">
+                                    Ainda não pertences a grupos.
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Estatísticas (substitui "A Sua Conta") --}}
+                <div class="comm-card rounded-2xl overflow-hidden">
+                    <div class="p-6 sm:p-7 text-white/90">
+                        <div class="mb-5">
+                            <h3 class="text-lg font-semibold text-white">
+                                Estatísticas
+                            </h3>
+                            <p class="mt-1 text-sm text-white/60">
+                                Visão rápida da tua atividade no Communico.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="rounded-2xl border p-4"
+                                 style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.03);">
+                                <div class="text-xs text-white/55">Conversas</div>
+                                <div class="mt-1 text-2xl font-semibold" style="color: var(--c-a1);">
+                                    {{ $totalConversas }}
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl border p-4"
+                                 style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.03);">
+                                <div class="text-xs text-white/55">Grupos</div>
+                                <div class="mt-1 text-2xl font-semibold" style="color: var(--c-a2);">
+                                    {{ $totalGrupos }}
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl border p-4"
+                                 style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.03);">
+                                <div class="text-xs text-white/55">Mensagens enviadas</div>
+                                <div class="mt-1 text-2xl font-semibold text-white">
+                                    {{ $mensagensEnviadas }}
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl border p-4"
+                                 style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.03);">
+                                <div class="text-xs text-white/55">Anexos enviados</div>
+                                <div class="mt-1 text-2xl font-semibold text-white">
+                                    {{ $anexosEnviados }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 flex items-center justify-between rounded-2xl border px-4 py-3"
+                             style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.02);">
+                            <div class="flex items-center gap-3">
+                                <x-avatar :user="$user" size="sm" />
+                                <div class="leading-tight">
+                                    <div class="text-sm font-semibold text-white/85">
+                                        {{ $nome }}
+                                    </div>
+                                    <div class="text-xs text-white/55">
+                                        {{ $user->email }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <a
+                                href="{{ route('profile.edit') }}"
+                                class="text-sm font-semibold hover:underline"
+                                style="color: rgba(96,165,250,.95);"
+                            >
+                                Gerir perfil →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            {{-- Ações rápidas --}}
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <a
+                    href="{{ route('chat.index') }}"
+                    class="comm-card rounded-2xl p-5 text-center border transition hover:-translate-y-0.5"
+                    style="
+                        border-color: rgba(255,255,255,.12);
+                        background: linear-gradient(180deg, rgba(96,165,250,.20), rgba(45,212,191,.12));
+                    "
+                >
+                    <div class="text-sm font-semibold text-white">
+                        Abrir chat
+                    </div>
+                    <div class="mt-1 text-xs text-white/65">
+                        Ir para conversas e grupos
+                    </div>
+                </a>
+
+                <a
+                    href="{{ route('chat.index') }}"
+                    class="comm-card rounded-2xl p-5 text-center border transition hover:-translate-y-0.5"
+                    style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
+                >
+                    <div class="text-sm font-semibold text-white/90">
+                        Iniciar nova conversa
+                    </div>
+                    <div class="mt-1 text-xs text-white/65">
+                        Seleciona um utilizador no chat
+                    </div>
+                </a>
+
+                <a
+                    href="{{ route('profile.edit') }}"
+                    class="comm-card rounded-2xl p-5 text-center border transition hover:-translate-y-0.5"
+                    style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
+                >
+                    <div class="text-sm font-semibold text-white/90">
+                        Gerir conta
+                    </div>
+                    <div class="mt-1 text-xs text-white/65">
+                        Dados e palavra-passe
+                    </div>
+                </a>
+
+            </div>
 
         </div>
-
-        {{-- Ações rápidas --}}
-        <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <a href="{{ route('chat.index') }}"
-               class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-3 px-6 rounded-lg shadow text-center">
-                Abrir Chat 💬
-            </a>
-
-            <a href="{{ route('chat.index') }}"
-               class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold py-3 px-6 rounded-lg border border-gray-300 text-center">
-                Iniciar Nova Conversa ➕
-            </a>
-
-            <a href="{{ route('profile.edit') }}"
-               class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold py-3 px-6 rounded-lg border border-gray-300 text-center">
-                Gerir Conta ⚙️
-            </a>
-        </div>
-
     </div>
 </x-app-layout>

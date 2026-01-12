@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Gestão de Grupos de Chat') }}
+        <h2 class="font-semibold text-xl leading-tight text-white">
+            Gestão de grupos de chat
         </h2>
     </x-slot>
 
@@ -9,7 +9,7 @@
         $allUsers = \App\Models\User::orderBy('nome')->get();
     @endphp
 
-    <div 
+    <div
         x-data="{
             /* Estados gerais */
             showDeleteModal: false,
@@ -37,149 +37,190 @@
         }"
     >
 
-        <div class="py-12">
+        <div class="py-10">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
+
+                <div class="comm-card rounded-2xl overflow-hidden">
+                    <div class="p-6 sm:p-8 text-white/90">
 
                         {{-- Flash messages --}}
                         @if (session('success'))
-                            <div class="mb-4 p-4 text-sm text-green-800 rounded-lg bg-green-50">
+                            <div class="mb-6 rounded-xl border px-4 py-3 text-sm"
+                                 style="border-color: rgba(34,197,94,.25); background: rgba(34,197,94,.10); color: rgba(220,252,231,.95);">
                                 {{ session('success') }}
                             </div>
                         @endif
 
                         @if (session('error'))
-                            <div class="mb-4 p-4 text-sm text-red-800 rounded-lg bg-red-50">
+                            <div class="mb-6 rounded-xl border px-4 py-3 text-sm"
+                                 style="border-color: rgba(248,113,113,.25); background: rgba(248,113,113,.10); color: rgba(254,202,202,.95);">
                                 {{ session('error') }}
                             </div>
                         @endif
 
-
                         {{-- Header --}}
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-xl font-bold">
-                                {{ __('Grupos Criados') }} ({{ $grupos->total() }})
-                            </h3>
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+                            <div>
+                                <div class="text-xs tracking-wide text-white/55 uppercase">
+                                    Administração
+                                </div>
+                                <h3 class="mt-1 text-2xl font-semibold text-white">
+                                    Grupos criados
+                                </h3>
+                                <p class="mt-1 text-sm text-white/65">
+                                    Total: <span class="font-semibold text-white/85">{{ $grupos->total() }}</span>
+                                </p>
+                            </div>
 
-                            <a href="{{ route('admin.grupos.create') }}"
-                               class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-                                {{ __('Criar Novo Grupo') }}
+                            <a
+                                href="{{ route('admin.grupos.create') }}"
+                                class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold
+                                       text-white border transition hover:brightness-110"
+                                style="
+                                    border-color: rgba(255,255,255,.12);
+                                    background: linear-gradient(180deg, rgba(96,165,250,.20), rgba(45,212,191,.12));
+                                "
+                            >
+                                Criar novo grupo
                             </a>
                         </div>
 
-
                         {{-- Tabela --}}
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium">ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium">Nome</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium">Descrição</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium">Criador</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium">Membros</th>
-                                        <th class="px-6 py-3"></th>
+                        <div class="overflow-x-auto rounded-2xl border" style="border-color: rgba(255,255,255,.10);">
+                            <table class="min-w-full">
+                                <thead style="background: rgba(255,255,255,.04);">
+                                    <tr class="border-b" style="border-color: rgba(255,255,255,.10);">
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">Nome</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">Descrição</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">Criador</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">Membros</th>
+                                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/60">Ações</th>
                                     </tr>
                                 </thead>
 
-                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tbody class="divide-y" style="divide-color: rgba(255,255,255,.08);">
                                     @forelse ($grupos as $grupo)
-                                        <tr>
-                                            <td class="px-6 py-4">{{ $grupo->id }}</td>
-                                            <td class="px-6 py-4">{{ $grupo->nome }}</td>
-                                            <td class="px-6 py-4">{{ $grupo->descricao ?? '--' }}</td>
-                                            <td class="px-6 py-4">{{ $grupo->criador->nome ?? '--' }}</td>
-                                            <td class="px-6 py-4">{{ $grupo->membros->count() }} Membros</td>
+                                        <tr
+                                            class="transition"
+                                            style="background: rgba(255,255,255,.02);"
+                                            onmouseover="this.style.background='rgba(255,255,255,.05)'"
+                                            onmouseout="this.style.background='rgba(255,255,255,.02)'"
+                                        >
+                                            <td class="px-6 py-4 text-sm font-semibold text-white/85">
+                                                {{ $grupo->id }}
+                                            </td>
 
-                                            <td class="px-6 py-4 text-right space-x-3">
+                                            <td class="px-6 py-4 text-sm text-white/85">
+                                                <div class="font-semibold">{{ $grupo->nome }}</div>
+                                            </td>
 
-                                                {{-- Gerir Membros --}}
-                                                <button
-                                                    @click="
-                                                        membros = [];             
-                                                        grupoId = {{ $grupo->id }};
-                                                        grupoNome = '{{ $grupo->nome }}';
+                                            <td class="px-6 py-4 text-sm text-white/65 max-w-sm truncate">
+                                                {{ $grupo->descricao ?? '—' }}
+                                            </td>
 
-                                                        // 1. Primeiro carregamos os membros
-                                                        fetch(`/admin/grupos/${grupoId}/membros-json`)
-                                                            .then(res => res.json())
-                                                            .then(data => {
-                                                                membros = data;
+                                            <td class="px-6 py-4 text-sm text-white/70">
+                                                {{ $grupo->criador->nome ?? '—' }}
+                                            </td>
 
-                                                                // 2. Só agora abrimos o modal, com a lista já carregada
-                                                                showMembrosModal = true;
-                                                            });
-                                                    "
-                                                    class="text-indigo-600 hover:text-indigo-900"
-                                                >
-                                                    Gerir Membros
-                                                </button>
+                                            <td class="px-6 py-4 text-sm">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+                                                      style="border-color: rgba(96,165,250,.25); background: rgba(96,165,250,.10); color: rgba(191,219,254,.95);">
+                                                    {{ $grupo->membros->count() }} membros
+                                                </span>
+                                            </td>
 
-                                                {{-- Editar --}}
-                                                <a href="{{ route('admin.grupos.edit', $grupo) }}"
-                                                   class="text-indigo-600 hover:text-indigo-900">
-                                                    Editar
-                                                </a>
+                                            <td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                                <div class="inline-flex items-center gap-4">
 
-                                                {{-- Eliminar --}}
-                                                <button
-                                                    @click="
-                                                        showDeleteModal = true;
-                                                        deleteUrl = '{{ route('admin.grupos.destroy', $grupo) }}';
-                                                    "
-                                                    class="text-red-600 hover:text-red-900">
-                                                    Eliminar
-                                                </button>
+                                                    {{-- Gerir Membros --}}
+                                                    <button
+                                                        @click="
+                                                            membros = [];
+                                                            grupoId = {{ $grupo->id }};
+                                                            grupoNome = '{{ $grupo->nome }}';
 
+                                                            fetch(`/admin/grupos/${grupoId}/membros-json`)
+                                                                .then(res => res.json())
+                                                                .then(data => {
+                                                                    membros = data;
+                                                                    showMembrosModal = true;
+                                                                });
+                                                        "
+                                                        class="font-semibold hover:underline"
+                                                        style="color: rgba(45,212,191,.95);"
+                                                    >
+                                                        Gerir membros
+                                                    </button>
+
+                                                    {{-- Editar --}}
+                                                    <a
+                                                        href="{{ route('admin.grupos.edit', $grupo) }}"
+                                                        class="font-semibold hover:underline"
+                                                        style="color: rgba(96,165,250,.95);"
+                                                    >
+                                                        Editar
+                                                    </a>
+
+                                                    {{-- Eliminar --}}
+                                                    <button
+                                                        @click="
+                                                            showDeleteModal = true;
+                                                            deleteUrl = '{{ route('admin.grupos.destroy', $grupo) }}';
+                                                        "
+                                                        class="font-semibold hover:underline"
+                                                        style="color: rgba(248,113,113,.95);"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+
+                                                </div>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                                            <td colspan="6" class="px-6 py-8 text-center text-sm text-white/60">
                                                 Nenhum grupo encontrado.
                                             </td>
                                         </tr>
                                     @endforelse
                                 </tbody>
-
                             </table>
                         </div>
 
-                        <div class="mt-4">{{ $grupos->links() }}</div>
+                        <div class="mt-6 text-white/80">
+                            {{ $grupos->links() }}
+                        </div>
 
                     </div>
                 </div>
+
             </div>
         </div>
-
 
         {{-- Modal eliminar grupo --}}
         <div x-show="showDeleteModal" style="display:none;">
             <x-confirm-modal
                 name="group-delete"
-                title="Eliminar Grupo"
+                title="Eliminar grupo"
                 content="Tem a certeza que deseja eliminar este grupo?"
                 method="DELETE"
                 x-bind:action-route="deleteUrl"
             />
         </div>
 
-
         {{-- Modal remover membro --}}
         <div x-show="showMemberDeleteModal" style="display:none;">
             <x-confirm-modal
                 name="member-delete"
-                title="Remover Membro"
+                title="Remover membro"
                 x-bind:content="'Tem a certeza que deseja remover ' + memberName + ' deste grupo?'"
                 method="DELETE"
                 x-bind:action-route="deleteUrl"
             />
         </div>
 
-
-        {{-- Inclui o modal de membros --}}
+        {{-- Modal de membros --}}
         @include('admin.grupos.membros_modal')
 
     </div>

@@ -1,80 +1,130 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Gestão de Tipos de Utilizador e Permissões') }}
+        <h2 class="font-semibold text-xl leading-tight text-white">
+            Gestão de tipos de utilizador e permissões
         </h2>
     </x-slot>
 
     <div x-data="{ showDeleteModal: false, deleteUrl: '' }">
-        <div class="py-12">
+        <div class="py-10">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
-                        
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-xl font-bold">{{ __('Tipos de Utilizador') }} ({{ $tipos->total() ?? 0 }})</h3>
-                            <a href="{{ route('admin.tipos-utilizadores.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-150">
-                                {{ __('Adicionar Novo Tipo') }}
+
+                <div class="comm-card rounded-2xl overflow-hidden">
+                    <div class="p-6 sm:p-8 text-white/90">
+
+                        {{-- Cabeçalho --}}
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+                            <div>
+                                <div class="text-xs tracking-wide text-white/55 uppercase">
+                                    Administração
+                                </div>
+                                <h3 class="mt-1 text-2xl font-semibold text-white">
+                                    Tipos de utilizador
+                                </h3>
+                                <p class="mt-1 text-sm text-white/65">
+                                    Total: <span class="font-semibold text-white/85">{{ $tipos->total() ?? 0 }}</span>
+                                </p>
+                            </div>
+
+                            <a
+                                href="{{ route('admin.tipos-utilizadores.create') }}"
+                                class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold
+                                       text-white border transition hover:brightness-110"
+                                style="
+                                    border-color: rgba(255,255,255,.12);
+                                    background: linear-gradient(180deg, rgba(96,165,250,.20), rgba(45,212,191,.12));
+                                "
+                            >
+                                Criar novo tipo
                             </a>
                         </div>
 
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            {{ __('ID') }}
+                        {{-- Tabela --}}
+                        <div class="overflow-x-auto rounded-2xl border" style="border-color: rgba(255,255,255,.10);">
+                            <table class="min-w-full">
+                                <thead style="background: rgba(255,255,255,.04);">
+                                    <tr class="border-b" style="border-color: rgba(255,255,255,.10);">
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">
+                                            ID
                                         </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            {{ __('Nome') }}
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">
+                                            Nome
                                         </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            {{ __('Descrição') }}
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">
+                                            Descrição
                                         </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            {{ __('Permissões Associadas') }}
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">
+                                            Permissões
                                         </th>
-                                        <th scope="col" class="relative px-6 py-3">
-                                            <span class="sr-only">{{ __('Ações') }}</span>
+                                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/60">
+                                            Ações
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+
+                                <tbody class="divide-y" style="divide-color: rgba(255,255,255,.08);">
                                     @forelse ($tipos as $tipo)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <tr class="transition" style="background: rgba(255,255,255,.02);" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background='rgba(255,255,255,.02)'">
+                                            <td class="px-6 py-4 text-sm font-semibold text-white/85">
                                                 {{ $tipo->id }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $tipo->nome }}
-                                                @if ($tipo->nome === 'Administrador')
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">{{ __('Base') }}</span>
-                                                @endif
+
+                                            <td class="px-6 py-4 text-sm text-white/85">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-semibold">
+                                                        {{ $tipo->nome }}
+                                                    </span>
+
+                                                    @if ($tipo->nome === 'Administrador')
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border"
+                                                              style="border-color: rgba(248,113,113,.35); background: rgba(248,113,113,.12); color: rgba(254,202,202,.95);">
+                                                            Base
+                                                        </span>
+                                                    @endif
+                                                </div>
                                             </td>
-                                            <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                                                {{ $tipo->descricao }}
+
+                                            <td class="px-6 py-4 text-sm text-white/65 max-w-sm truncate">
+                                                {{ $tipo->descricao ?: '—' }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                    {{ $tipo->permissoes->count() }} {{ __('Permissões') }}
+
+                                            <td class="px-6 py-4 text-sm">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+                                                      style="border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.10); color: rgba(167,243,208,.95);">
+                                                    {{ $tipo->permissoes->count() }} permissões
                                                 </span>
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <a href="{{ route('admin.tipos-utilizadores.edit', $tipo) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">{{ __('Editar') }}</a>
-                                                
-                                                <button 
-                                                    @click="showDeleteModal = true; deleteUrl = '{{ route('admin.tipos-utilizadores.destroy', $tipo->id) }}'"
-                                                    type="button"
-                                                    class="text-red-600 hover:text-red-900"
-                                                    x-bind:disabled="{{ $tipo->nome === 'Administrador' ? 'true' : 'false' }}">
-                                                    {{ __('Eliminar') }}
-                                                </button>
+
+                                            <td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                                <div class="inline-flex items-center gap-4">
+                                                    <a
+                                                        href="{{ route('admin.tipos-utilizadores.edit', $tipo) }}"
+                                                        class="font-semibold hover:underline"
+                                                        style="color: rgba(96,165,250,.95);"
+                                                    >
+                                                        Editar
+                                                    </a>
+
+                                                    <button
+                                                        type="button"
+                                                        @click="
+                                                            showDeleteModal = true;
+                                                            deleteUrl = '{{ route('admin.tipos-utilizadores.destroy', $tipo->id) }}';
+                                                        "
+                                                        class="font-semibold hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        style="color: rgba(248,113,113,.95);"
+                                                        x-bind:disabled="{{ $tipo->nome === 'Administrador' ? 'true' : 'false' }}"
+                                                        title="{{ $tipo->nome === 'Administrador' ? 'Não é possível eliminar o tipo base.' : 'Eliminar tipo' }}"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
-                                                {{ __('Nenhum Tipo de Utilizador encontrado.') }}
+                                            <td colspan="5" class="px-6 py-8 text-center text-sm text-white/60">
+                                                Nenhum tipo de utilizador encontrado.
                                             </td>
                                         </tr>
                                     @endforelse
@@ -82,24 +132,30 @@
                             </table>
                         </div>
 
-                        <div class="mt-4">
+                        {{-- Paginação --}}
+                        <div class="mt-6 text-white/80">
                             {{ $tipos->links() }}
                         </div>
 
                     </div>
                 </div>
+
             </div>
         </div>
 
-        <div x-show="showDeleteModal" x-on:keydown.escape.window="showDeleteModal = false" style="display: none;">
-             <x-confirm-modal 
-                name="tipo-delete" 
-                title="Atenção: Eliminar Tipo de Utilizador" 
-                content="Tem certeza que deseja eliminar este Tipo de Utilizador? Esta ação é irreversível e irá desassociar todos os utilizadores desta função." 
-                method="DELETE"> 
-                {{-- Removemos a passagem de :action-route --}}
-            </x-confirm-modal>
+        {{-- Modal de confirmação --}}
+        <div
+            x-show="showDeleteModal"
+            x-on:keydown.escape.window="showDeleteModal = false"
+            style="display: none;"
+        >
+            <x-confirm-modal
+                name="tipo-delete"
+                title="Eliminar tipo de utilizador"
+                content="Tem a certeza que deseja eliminar este tipo de utilizador? Esta ação é irreversível e irá desassociar todos os utilizadores."
+                method="DELETE"
+                x-bind:action-route="deleteUrl"
+            />
         </div>
-
     </div>
 </x-app-layout>

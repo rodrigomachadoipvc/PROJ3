@@ -1,33 +1,33 @@
 <x-guest-layout>
-    <div class="max-w-md mx-auto mt-8 p-6 bg-white shadow rounded-lg">
+    <div class="w-full">
+        {{-- Título --}}
+        <div class="mb-8 text-center">
+            <h1 class="text-2xl font-semibold text-white">
+                Verifica o teu email
+            </h1>
+            <p class="mt-4 text-sm text-white/65">
+                Obrigado por te registares no <strong class="text-white/85">Communico</strong>.
+                Antes de continuares, precisamos que confirmes o teu endereço de email.
+            </p>
+            <p class="mt-2 text-sm text-white/65">
+                Enviámos um link de verificação para o teu email.
+                Clica nesse link para ativares a tua conta.
+            </p>
 
-        <h1 class="text-xl font-semibold text-gray-900 text-center">
-            Verifica o teu email
-        </h1>
+            @if (session('status') === 'verification-link-sent')
+                <div class="mt-4 text-sm font-semibold" style="color: rgba(45,212,191,.95);">
+                    Um novo email de verificação foi enviado.
+                </div>
+            @endif
+        </div>
 
-        <p class="mt-4 text-sm text-gray-600 text-center">
-            Obrigado por te registares no <strong>Communico</strong>.
-            Antes de continuares, precisamos que confirmes o teu endereço de email.
-        </p>
-
-        <p class="mt-2 text-sm text-gray-600 text-center">
-            Enviámos um link de verificação para o teu email.
-            Clica nesse link para ativares a tua conta.
-        </p>
-
-        @if (session('status') === 'verification-link-sent')
-            <div class="mt-4 text-sm text-green-600 text-center font-medium">
-                Um novo email de verificação foi enviado.
-            </div>
-        @endif
-
-        <div class="mt-6 flex flex-col gap-3">
-
+        {{-- Ações --}}
+        <div class="mt-2 flex flex-col gap-4">
             {{-- Reenviar email --}}
             <form method="POST" action="{{ route('verification.send') }}">
                 @csrf
 
-                <x-primary-button class="w-full justify-center">
+                <x-primary-button class="w-full justify-center py-3">
                     Reenviar email de verificação
                 </x-primary-button>
             </form>
@@ -38,12 +38,12 @@
 
                 <button
                     type="submit"
-                    class="w-full text-sm text-gray-600 hover:text-gray-900 underline"
+                    class="text-sm font-semibold hover:underline text-center"
+                    style="color: rgba(96,165,250,.95);"
                 >
                     Terminar sessão
                 </button>
             </form>
-
         </div>
     </div>
 </x-guest-layout>

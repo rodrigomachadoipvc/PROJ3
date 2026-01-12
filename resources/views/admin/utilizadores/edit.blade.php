@@ -1,89 +1,201 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Editar Utilizador') }}: {{ $utilizador->nome }}
+        <h2 class="font-semibold text-xl leading-tight text-white">
+            Editar utilizador
         </h2>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    
-                    <h3 class="text-xl font-bold mb-6">{{ __('Detalhes do Utilizador') }}</h3>
+    <div class="py-10">
+        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
 
-                    <!-- Formulário de Edição (Usa método PUT) -->
-                    <form method="POST" action="{{ route('admin.utilizadores.update', $utilizador->id) }}">
+            <div class="comm-card rounded-2xl overflow-hidden">
+                <div class="p-6 sm:p-8 text-white/90">
+
+                    {{-- Título --}}
+                    <div class="mb-8 flex items-start justify-between gap-6">
+                        <div>
+                            <div class="text-xs tracking-wide text-white/55 uppercase">
+                                Administração
+                            </div>
+                            <h3 class="mt-1 text-2xl font-semibold text-white">
+                                {{ $utilizador->nome }}
+                            </h3>
+                            <p class="mt-2 text-sm text-white/65">
+                                Atualiza os dados da conta, tipo de utilizador e estado.
+                            </p>
+                        </div>
+
+                        @php $isActive = $utilizador->status === 'ativo'; @endphp
+                        <div class="shrink-0">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border"
+                                  style="
+                                        border-color: {{ $isActive ? 'rgba(52,211,153,.30)' : 'rgba(251,191,36,.30)' }};
+                                        background: {{ $isActive ? 'rgba(52,211,153,.10)' : 'rgba(251,191,36,.10)' }};
+                                        color: {{ $isActive ? 'rgba(167,243,208,.95)' : 'rgba(253,230,138,.95)' }};
+                                  ">
+                                {{ $isActive ? 'Conta ativa' : 'Conta inativa' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('admin.utilizadores.update', $utilizador->id) }}" class="space-y-8">
                         @csrf
                         @method('PUT')
 
-                        <!-- Nome Completo -->
-                        <div class="mb-4">
-                            <x-input-label for="nome" :value="__('Nome Completo')" />
-                            <x-text-input id="nome" class="block mt-1 w-full" type="text" name="nome" :value="old('nome', $utilizador->nome)" required autofocus />
-                            <x-input-error :messages="$errors->get('nome')" class="mt-2" />
-                        </div>
+                        {{-- Dados base --}}
+                        <div>
+                            <h4 class="text-lg font-semibold text-white mb-4">
+                                Dados do utilizador
+                            </h4>
 
-                        <!-- Email -->
-                        <div class="mb-4">
-                            <x-input-label for="email" :value="__('Endereço de Email')" />
-                            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $utilizador->email)" required />
-                            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                        </div>
+                            <div class="space-y-6">
+                                <div>
+                                    <x-input-label for="nome" :value="__('Nome completo')" class="text-white/80" />
+                                    <x-text-input
+                                        id="nome"
+                                        type="text"
+                                        name="nome"
+                                        :value="old('nome', $utilizador->nome)"
+                                        required
+                                        autofocus
+                                        class="mt-1 block w-full bg-white/5 text-white border-white/10
+                                               placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
+                                    />
+                                    <x-input-error :messages="$errors->get('nome')" class="mt-2" />
+                                </div>
 
-                        <!-- Alterar Password (Opcional) -->
-                        <div class="border-t border-gray-200 pt-6 mt-6">
-                            <h4 class="text-lg font-semibold mb-4">{{ __('Alterar Password (Opcional)')}}</h4>
-                            <div class="mb-4">
-                                <x-input-label for="password" :value="__('Nova Password (mínimo 8 caracteres)')" />
-                                <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" autocomplete="new-password" />
-                                <x-input-error :messages="$errors->get('password')" class="mt-2" />
-                                <p class="mt-1 text-xs text-gray-500">{{ __('Deixe em branco para não alterar a password.') }}</p>
+                                <div>
+                                    <x-input-label for="email" :value="__('Endereço de email')" class="text-white/80" />
+                                    <x-text-input
+                                        id="email"
+                                        type="email"
+                                        name="email"
+                                        :value="old('email', $utilizador->email)"
+                                        required
+                                        class="mt-1 block w-full bg-white/5 text-white border-white/10
+                                               placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
+                                    />
+                                    <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                                </div>
                             </div>
+                        </div>
 
-                            <div class="mb-6">
-                                <x-input-label for="password_confirmation" :value="__('Confirmar Nova Password')" />
-                                <x-text-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" />
-                                <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+                        <div class="border-t" style="border-color: rgba(255,255,255,.10);"></div>
+
+                        {{-- Alterar password --}}
+                        <div>
+                            <h4 class="text-lg font-semibold text-white mb-2">
+                                Alterar password
+                            </h4>
+                            <p class="text-sm text-white/65 mb-5">
+                                Preenche apenas se quiseres alterar a password atual.
+                            </p>
+
+                            <div class="space-y-6">
+                                <div>
+                                    <x-input-label for="password" :value="__('Nova password')" class="text-white/80" />
+                                    <x-text-input
+                                        id="password"
+                                        type="password"
+                                        name="password"
+                                        autocomplete="new-password"
+                                        class="mt-1 block w-full bg-white/5 text-white border-white/10
+                                               placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
+                                    />
+                                    <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                                </div>
+
+                                <div>
+                                    <x-input-label for="password_confirmation" :value="__('Confirmar nova password')" class="text-white/80" />
+                                    <x-text-input
+                                        id="password_confirmation"
+                                        type="password"
+                                        name="password_confirmation"
+                                        class="mt-1 block w-full bg-white/5 text-white border-white/10
+                                               placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
+                                    />
+                                    <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Tipo de Utilizador (Dropdown/Select) -->
-                        <div class="mb-6 border-t border-gray-200 pt-6 mt-6">
-                            <x-input-label for="tipo_utilizador_id" :value="__('Tipo de Utilizador (Role)')" />
-                            <select id="tipo_utilizador_id" name="tipo_utilizador_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                                <option value="">-- Selecione um Tipo --</option>
-                                @foreach ($tiposUtilizador as $tipo)
-                                    <option value="{{ $tipo->id }}" {{ old('tipo_utilizador_id', $utilizador->tipo_utilizador_id) == $tipo->id ? 'selected' : '' }}>
-                                        {{ $tipo->nome }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <x-input-error :messages="$errors->get('tipo_utilizador_id')" class="mt-2" />
+                        <div class="border-t" style="border-color: rgba(255,255,255,.10);"></div>
+
+                        {{-- Tipo e estado --}}
+                        <div>
+                            <h4 class="text-lg font-semibold text-white mb-4">
+                                Permissões e estado
+                            </h4>
+
+                            <div class="space-y-6">
+                                <div>
+                                    <x-input-label for="tipo_utilizador_id" :value="__('Tipo de utilizador')" class="text-white/80" />
+
+                                    <select
+                                        id="tipo_utilizador_id"
+                                        name="tipo_utilizador_id"
+                                        required
+                                        class="mt-1 block w-full rounded-xl border bg-white/5 text-white
+                                               focus:ring-0 focus:border-white/20"
+                                        style="border-color: rgba(255,255,255,.10);"
+                                    >
+                                        <option value="" class="bg-slate-900">Selecionar tipo</option>
+                                        @foreach ($tiposUtilizador as $tipo)
+                                            <option
+                                                value="{{ $tipo->id }}"
+                                                class="bg-slate-900"
+                                                {{ old('tipo_utilizador_id', $utilizador->tipo_utilizador_id) == $tipo->id ? 'selected' : '' }}
+                                            >
+                                                {{ $tipo->nome }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+
+                                    <x-input-error :messages="$errors->get('tipo_utilizador_id')" class="mt-2" />
+                                </div>
+
+                                <div>
+                                    <x-input-label for="status" :value="__('Estado da conta')" class="text-white/80" />
+
+                                    <select
+                                        id="status"
+                                        name="status"
+                                        required
+                                        class="mt-1 block w-full rounded-xl border bg-white/5 text-white
+                                               focus:ring-0 focus:border-white/20"
+                                        style="border-color: rgba(255,255,255,.10);"
+                                    >
+                                        <option value="ativo" class="bg-slate-900" {{ old('status', $utilizador->status) === 'ativo' ? 'selected' : '' }}>
+                                            Ativo
+                                        </option>
+                                        <option value="inativo" class="bg-slate-900" {{ old('status', $utilizador->status) === 'inativo' ? 'selected' : '' }}>
+                                            Inativo
+                                        </option>
+                                    </select>
+
+                                    <x-input-error :messages="$errors->get('status')" class="mt-2" />
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Status -->
-                         <div class="mb-6">
-                            <x-input-label for="status" :value="__('Status')" />
-                            <select id="status" name="status" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                                <option value="ativo" {{ old('status', $utilizador->status) == 'ativo' ? 'selected' : '' }}>Ativo</option>
-                                <option value="inativo" {{ old('status', $utilizador->status) == 'inativo' ? 'selected' : '' }}>Inativo</option>
-                                <!-- Adicionar 'bloqueado' se necessário -->
-                                <!-- <option value="bloqueado" {{ old('status', $utilizador->status) == 'bloqueado' ? 'selected' : '' }}>Bloqueado</option> -->
-                            </select>
-                            <x-input-error :messages="$errors->get('status')" class="mt-2" />
-                        </div>
-                        
-                        <div class="flex items-center justify-end mt-4">
-                            <a href="{{ route('admin.utilizadores.index') }}" class="text-gray-600 hover:text-gray-900 mr-4">{{ __('Cancelar') }}</a>
+                        {{-- Ações --}}
+                        <div class="flex items-center justify-end gap-4 pt-2">
+                            <a
+                                href="{{ route('admin.utilizadores.index') }}"
+                                class="text-sm font-semibold text-white/70 hover:text-white hover:underline"
+                            >
+                                Cancelar
+                            </a>
+
                             <x-primary-button>
-                                {{ __('Guardar Alterações') }}
+                                Guardar alterações
                             </x-primary-button>
                         </div>
                     </form>
 
                 </div>
             </div>
+
         </div>
     </div>
 </x-app-layout>
