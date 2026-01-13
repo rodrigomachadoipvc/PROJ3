@@ -17,7 +17,8 @@ class SystemUserSeeder extends Seeder
                 'nome' => 'Sistema',
                 'password' => Hash::make(str()->random(32)),
                 'is_system' => true,
-                'active' => true,
+                'status' => 'ativo',
+                
             ]
         );
     }
