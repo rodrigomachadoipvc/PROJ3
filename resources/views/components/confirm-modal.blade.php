@@ -1,4 +1,14 @@
-@props(['name', 'title' => 'Confirmar ação', 'content' => '', 'method' => 'POST', 'actionRoute' => null])
+@props([
+    'name',
+    'title' => 'Confirmar ação',
+    'content' => '',
+    'method' => 'POST',
+    'actionRoute' => null,
+])
+
+@php
+    $httpMethod = strtoupper($method ?? 'POST');
+@endphp
 
 <div
     x-data="{ show: true }"
@@ -80,11 +90,16 @@
     </div>
 </div>
 
-{{-- Mantém compatibilidade: se actionRoute for passado, usa actionRoute; senão usa deleteUrl --}}
+{{-- Form escondido que executa a ação --}}
 <form
     id="{{ $name }}-form"
     method="POST"
-    x-bind:action="{{ $actionRoute ? 'actionRoute' : 'deleteUrl' }}"
     style="display: none;"
+    x-bind:action="(typeof actionRoute !== 'undefined' && actionRoute) ? actionRoute : (typeof deleteUrl !== 'undefined' ? deleteUrl : '')"
 >
     @csrf
+
+    @if ($httpMethod !== 'POST')
+        @method($httpMethod)
+    @endif
+</form>
