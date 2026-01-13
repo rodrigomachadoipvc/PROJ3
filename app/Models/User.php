@@ -6,9 +6,15 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
+use App\Models\TipoUtilizador;
+use App\Services\SystemConversationService;
+use Throwable;
+use Illuminate\Support\Facades\Log;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -37,9 +43,36 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    /* =========================
-     | Accessors / Mutators
-     ========================= */
+    protected static function booted(): void
+    {
+        static::creating(function ($user) {
+            if (empty($user->tipo_utilizador_id)) {
+                $tipo = TipoUtilizador::firstOrCreate(
+                    ['nome' => 'Utilizador'],
+                    ['descricao' => 'Utilizador padrão da aplicação.']
+                );
+
+                $user->tipo_utilizador_id = $tipo->id;
+            }
+        });
+
+        // ✅ NOVO: ao criar um utilizador normal, cria (ou garante) DM com Sistema
+        static::created(function (User $user) {
+            if ($user->is_system) {
+                return;
+            }
+
+            try {
+                app(SystemConversationService::class)->ensureForUser($user);
+            } catch (Throwable $e) {
+                // Não rebenta o registo; apenas loga
+                Log::warning('Falha ao garantir conversa com Sistema para novo utilizador.', [
+                    'user_id' => $user->id,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
+        });
+    }
 
     public function getNameAttribute(): ?string
     {
