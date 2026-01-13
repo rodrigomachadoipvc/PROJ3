@@ -15,7 +15,11 @@ class DatabaseSeeder extends Seeder
             PermissaoSeeder::class,
             UtilizadorInicialSeeder::class,
             SystemUserSeeder::class,
+
+            SystemConversaSeeder::class,
+
             AutoReplySeeder::class,
+            TipoUtilizadorSeeder::class,
         ]);
     }
 }

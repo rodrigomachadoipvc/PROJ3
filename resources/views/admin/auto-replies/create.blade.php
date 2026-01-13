@@ -28,17 +28,41 @@
                         @csrf
 
                         {{-- Disparador --}}
-                        <div>
-                            <x-input-label for="trigger" :value="__('Disparador')" class="text-white/80" />
-                            <x-text-input
-                                id="trigger"
-                                type="text"
+                        @php
+                            $suffix = old('trigger_suffix', '');
+                        @endphp
+
+                        <div x-data="{ suffix: @js($suffix) }">
+                            <x-input-label :value="__('Disparador')" class="text-white/80" />
+
+                            <div
+                                class="mt-1 flex items-center rounded-xl border overflow-hidden"
+                                style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.04);"
+                            >
+                                <span
+                                    class="px-3 py-2 text-sm font-semibold whitespace-nowrap"
+                                    style="color: rgba(255,255,255,.85); border-right: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.02);"
+                                >
+                                    @sistema
+                                </span>
+
+                                <input
+                                    type="text"
+                                    x-model="suffix"
+                                    name="trigger_suffix"
+                                    class="w-full px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none"
+                                    style="background: transparent;"
+                                    placeholder="Ex.: horário, ajuda, contacto"
+                                />
+                            </div>
+
+                            {{-- Valor real guardado --}}
+                            <input
+                                type="hidden"
                                 name="trigger"
-                                :value="old('trigger')"
-                                class="mt-1 block w-full bg-white/5 text-white border-white/10
-                                       placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
-                                placeholder="Ex.: horário, ajuda, contacto"
+                                :value="suffix.trim() ? ('@sistema ' + suffix.trim()) : '@sistema'"
                             />
+
                             <x-input-error :messages="$errors->get('trigger')" class="mt-2" />
                         </div>
 
