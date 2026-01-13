@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Anexo;
+use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Controllers\Admin\EstatisticasController; 
+
 
 /*
 |--------------------------------------------------------------------------
@@ -119,58 +122,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified'])
+Route::middleware(['auth', 'verified', EnsureUserIsAdmin::class])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
 
-        // DASHBOARD ADMIN
         Route::get('/dashboard', function () {
-
-            if (Auth::user()->tipoUtilizador?->nome !== 'Administrador') {
-                abort(403, 'Acesso Não Autorizado. Área exclusiva a administradores.');
-            }
-
             return view('admin.dashboard');
-
         })->name('dashboard');
-
-        /*
-        |--------------------------------------------------------------------------
-        | CRUDs Administração
-        |--------------------------------------------------------------------------
-        */
 
         Route::resource('tipos-utilizadores', TipoUtilizadorController::class)
             ->parameters(['tipos-utilizadores' => 'tipo_utilizador']);
 
         Route::resource('utilizadores', UtilizadorController::class);
-
         Route::resource('grupos', GrupoController::class);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Membros do Grupo
-        |--------------------------------------------------------------------------
-        */
         Route::post('grupos/{grupo}/membros', [GrupoController::class, 'adicionarMembro'])
             ->name('grupos.membros.store');
 
         Route::delete('grupos/{grupo}/membros/{user}', [GrupoController::class, 'removerMembro'])
             ->name('grupos.membros.destroy');
 
-        /*
-        |--------------------------------------------------------------------------
-        | JSON para carregamento dinâmico
-        |--------------------------------------------------------------------------
-        */
         Route::get('grupos/{grupo}/membros-json', function (\App\Models\Grupo $grupo) {
             return $grupo->membros()
                 ->select('users.id', 'users.nome', 'users.email')
                 ->get();
         })->name('grupos.membros.json');
 
-        Route::resource('auto-replies', AutoReplyController::class)
-            ->except(['show']);
+        Route::resource('auto-replies', AutoReplyController::class)->except(['show']);
 
+        // ✅ Estatísticas
+        Route::get('estatisticas', [EstatisticasController::class, 'index'])->name('estatisticas.index');
+        Route::get('estatisticas/export/csv', [EstatisticasController::class, 'exportCsv'])->name('estatisticas.export.csv');
+        Route::get('estatisticas/export/excel', [EstatisticasController::class, 'exportExcel'])->name('estatisticas.export.excel');
+        Route::get('estatisticas/export/pdf', [EstatisticasController::class, 'exportPdf'])->name('estatisticas.export.pdf');
     });

@@ -124,6 +124,27 @@
                             </div>
                         </a>
 
+                        <a
+                            href="{{ route('admin.estatisticas.index') }}"
+                            class="comm-card rounded-2xl p-6 transition
+                                   hover:-translate-y-0.5 hover:border-[rgba(96,165,250,.35)]
+                                   focus:outline focus:outline-2 focus:outline-offset-2"
+                            style="outline-color: rgba(96,165,250,.45);"
+                        >
+                            <h4 class="text-base font-semibold text-white">
+                                Estatísticas Gerais
+                            </h4>
+
+                            <p class="mt-2 text-sm text-white/70 leading-relaxed">
+                                Visualização de estatisticas gerais acerca da aplicação.
+                            </p>
+
+                            <div class="mt-4 inline-flex items-center gap-2 text-sm font-semibold"
+                                 style="color: var(--c-a1);">
+                                Estatisticas <span aria-hidden="true">→</span>
+                            </div>
+                        </a>
+
                     </div>
 
                     {{-- Nota --}}
