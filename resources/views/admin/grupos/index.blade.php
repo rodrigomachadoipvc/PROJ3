@@ -35,6 +35,15 @@
                     .catch(() => this.membros = []);
             }
         }"
+
+        x-on:confirm-close.window="
+            if ($event.detail && $event.detail.name === 'group-delete') {
+                showDeleteModal = false;
+            }
+            if ($event.detail && $event.detail.name === 'member-delete') {
+                showMemberDeleteModal = false;
+            }
+        "
     >
 
         <div class="py-10">
@@ -72,35 +81,118 @@
                                 </p>
                             </div>
 
-                            <a
-                                href="{{ route('admin.grupos.create') }}"
-                                class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold
-                                       text-white border transition hover:brightness-110"
-                                style="
-                                    border-color: rgba(255,255,255,.12);
-                                    background: linear-gradient(180deg, rgba(96,165,250,.20), rgba(45,212,191,.12));
-                                "
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end"
+                                 x-data="{
+                                    q: @js((string) request('q', '')),
+                                    timer: null,
+                                    submitLive() {
+                                        clearTimeout(this.timer);
+                                        this.timer = setTimeout(() => {
+                                            const v = (this.q || '').trim();
+                                            if (v.length === 0) {
+                                                window.location.href = @js(route('admin.grupos.index'));
+                                                return;
+                                            }
+                                            this.$refs.searchForm.submit();
+                                        }, 250);
+                                    }
+                                 }"
                             >
-                                Criar novo grupo
-                            </a>
+                                {{-- Pesquisa LIVE --}}
+                                <form x-ref="searchForm" method="GET" action="{{ route('admin.grupos.index') }}" class="flex items-center gap-2">
+                                    <div class="relative">
+                                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3" style="color: rgba(255,255,255,.55);">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 6.3 6.3a7.5 7.5 0 0 0 10.35 10.35Z" />
+                                            </svg>
+                                        </span>
+
+                                        <input
+                                            type="text"
+                                            name="q"
+                                            x-model="q"
+                                            @input="submitLive()"
+                                            placeholder="Pesquisar por nome, descrição, ID ou criador…"
+                                            class="w-full sm:w-80 rounded-xl border px-10 py-2 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-sky-400/35"
+                                            style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04);"
+                                            autocomplete="off"
+                                        />
+                                    </div>
+
+                                    @if (request('q'))
+                                        <a
+                                            href="{{ route('admin.grupos.index') }}"
+                                            class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-white/80 border transition hover:text-white hover:brightness-110"
+                                            style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
+                                        >
+                                            Limpar
+                                        </a>
+                                    @endif
+                                </form>
+
+                                <a
+                                    href="{{ route('admin.grupos.create') }}"
+                                    class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold
+                                           text-white border transition hover:brightness-110"
+                                    style="
+                                        border-color: rgba(255,255,255,.12);
+                                        background: linear-gradient(180deg, rgba(96,165,250,.20), rgba(45,212,191,.12));
+                                    "
+                                >
+                                    Criar novo grupo
+                                </a>
+                            </div>
                         </div>
 
-                        {{-- Tabela --}}
-                        <div class="overflow-x-auto rounded-2xl border" style="border-color: rgba(255,255,255,.10);">
+                        {{-- Tabela (scroll interno) --}}
+                        <div
+                            class="relative rounded-2xl border"
+                            style="
+                                border-color: rgba(255,255,255,.10);
+                                height: 62vh;
+                                overflow-y: scroll;
+                                overflow-x: auto;
+                            "
+                        >
                             <table class="min-w-full">
                                 <thead style="background: rgba(255,255,255,.04);">
                                     <tr class="border-b" style="border-color: rgba(255,255,255,.10);">
-                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">Nome</th>
-                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">Descrição</th>
-                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">Criador</th>
-                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">Membros</th>
-                                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/60">Ações</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10"
+                                            style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+                                            ID
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10"
+                                            style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+                                            Nome
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10"
+                                            style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+                                            Descrição
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10"
+                                            style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+                                            Criador
+                                        </th>
+
+                                        {{-- Header centrado --}}
+                                        <th class="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10"
+                                            style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+                                            Membros
+                                        </th>
+
+                                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10"
+                                            style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+                                            Ações
+                                        </th>
                                     </tr>
                                 </thead>
 
                                 <tbody class="divide-y" style="divide-color: rgba(255,255,255,.08);">
                                     @forelse ($grupos as $grupo)
+                                        @php
+                                            $countMembros = $grupo->membros->count();
+                                        @endphp
+
                                         <tr
                                             class="transition"
                                             style="background: rgba(255,255,255,.02);"
@@ -123,10 +215,14 @@
                                                 {{ $grupo->criador->nome ?? '—' }}
                                             </td>
 
-                                            <td class="px-6 py-4 text-sm">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
-                                                      style="border-color: rgba(96,165,250,.25); background: rgba(96,165,250,.10); color: rgba(191,219,254,.95);">
-                                                    {{ $grupo->membros->count() }} membros
+                                            {{-- Célula centrada --}}
+                                            <td class="px-6 py-4 text-sm text-center">
+                                                <span
+                                                    class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold border whitespace-nowrap min-w-[2.5rem]"
+                                                    style="border-color: rgba(96,165,250,.25); background: rgba(96,165,250,.10); color: rgba(191,219,254,.95);"
+                                                    title="Número de membros"
+                                                >
+                                                    {{ $countMembros }}
                                                 </span>
                                             </td>
 
@@ -199,26 +295,42 @@
         </div>
 
         {{-- Modal eliminar grupo --}}
-        <div x-show="showDeleteModal" style="display:none;">
-            <x-confirm-modal
-                name="group-delete"
-                title="Eliminar grupo"
-                content="Tem a certeza que deseja eliminar este grupo?"
-                method="DELETE"
-                x-bind:action-route="deleteUrl"
-            />
-        </div>
+        <template x-teleport="body">
+            <div
+                x-show="showDeleteModal"
+                x-cloak
+                class="fixed inset-0"
+                style="z-index: 2147483646;"
+            >
+                <x-confirm-modal
+                    name="group-delete"
+                    title="Eliminar grupo"
+                    content="Tem a certeza que deseja eliminar este grupo?"
+                    method="DELETE"
+                    confirmText="Confirmar"
+                    cancelText="Cancelar"
+                />
+            </div>
+        </template>
 
         {{-- Modal remover membro --}}
-        <div x-show="showMemberDeleteModal" style="display:none;">
-            <x-confirm-modal
-                name="member-delete"
-                title="Remover membro"
-                x-bind:content="'Tem a certeza que deseja remover ' + memberName + ' deste grupo?'"
-                method="DELETE"
-                x-bind:action-route="deleteUrl"
-            />
-        </div>
+        <template x-teleport="body">
+            <div
+                x-show="showMemberDeleteModal"
+                x-cloak
+                class="fixed inset-0"
+                style="z-index: 2147483647;"
+            >
+                <x-confirm-modal
+                    name="member-delete"
+                    title="Remover membro"
+                    x-bind:content="'Tem a certeza que deseja remover ' + memberName + ' deste grupo?'"
+                    method="DELETE"
+                    confirmText="Confirmar"
+                    cancelText="Cancelar"
+                />
+            </div>
+        </template>
 
         {{-- Modal de membros --}}
         @include('admin.grupos.membros_modal')

@@ -11,15 +11,36 @@ use Illuminate\Support\Facades\Auth;
 
 class GrupoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         if (!Auth::user()->hasPermissionTo('editar-grupos')) {
             abort(403, 'Acesso não autorizado.');
         }
 
-        $grupos = Grupo::with('criador', 'membros') 
-            ->orderBy('nome')
-            ->paginate(15); 
+        $q = trim((string) $request->query('q', ''));
+
+        $query = Grupo::with('criador', 'membros')
+            ->orderBy('nome');
+
+        if ($q !== '') {
+            $query->where(function ($outer) use ($q) {
+                $outer->where('nome', 'like', '%' . $q . '%')
+                    ->orWhere('descricao', 'like', '%' . $q . '%');
+
+                if (ctype_digit($q)) {
+                    $outer->orWhere('id', (int) $q);
+                }
+
+                $outer->orWhereHas('criador', function ($c) use ($q) {
+                    $c->where('nome', 'like', '%' . $q . '%')
+                      ->orWhere('email', 'like', '%' . $q . '%');
+                });
+            });
+        }
+
+        $grupos = $query
+            ->paginate(15)
+            ->withQueryString();
 
         return view('admin.grupos.index', compact('grupos'));
     }

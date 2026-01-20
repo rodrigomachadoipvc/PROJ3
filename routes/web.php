@@ -31,27 +31,21 @@ require __DIR__ . '/auth.php';
 
 /*
 |--------------------------------------------------------------------------
-| Rotas Autenticadas (Dashboard dinâmico)
+| Rotas Autenticadas
 |--------------------------------------------------------------------------
 |
-| Se o utilizador for ADMIN → admin.dashboard
-| Se for utilizador normal → dashboard.user
+| Requisito: após login, TODOS (user e admin) devem ser redirecionados para
+| /user/dashboard.
+|
+| A área /admin mantém-se protegida pelo middleware EnsureUserIsAdmin.
 |
 */
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // ROTA PRINCIPAL DE DASHBOARD (decide automaticamente)
+    // ROTA DE COMPATIBILIDADE (/dashboard) → encaminha sempre para o painel de utilizador.
     Route::get('/dashboard', function () {
-
-        $user = Auth::user();
-
-        if ($user->tipoUtilizador?->nome === 'Administrador') {
-            return redirect()->route('admin.dashboard');
-        }
-
         return redirect()->route('user.dashboard');
-
     })->name('dashboard');
 
     /*

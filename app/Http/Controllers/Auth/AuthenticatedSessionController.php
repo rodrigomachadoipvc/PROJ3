@@ -28,17 +28,9 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $user = Auth::user();
-
-        // 🔀 Redirect baseado no tipo de utilizador
-        if (
-            $user->tipoUtilizador &&
-            $user->tipoUtilizador->nome === 'Administrador'
-        ) {
-            return redirect()->intended('/admin/dashboard');
-        }
-
-        return redirect()->intended('/dashboard');
+        // ✅ Requisito: após login, TODOS (user e admin) são encaminhados para o painel de utilizador.
+        // A área /admin mantém-se protegida pelo middleware EnsureUserIsAdmin.
+        return redirect()->route('user.dashboard');
     }
 
     /**

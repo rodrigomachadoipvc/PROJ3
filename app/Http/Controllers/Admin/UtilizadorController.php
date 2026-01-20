@@ -5,21 +5,41 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\TipoUtilizador; 
+use App\Models\TipoUtilizador;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 class UtilizadorController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         if (!Auth::user()->hasPermissionTo('editar-utilizadores')) {
             abort(403, 'Acesso não autorizado.');
         }
 
-        $utilizadores = User::with('tipoUtilizador')
-            ->orderBy('nome')
-            ->paginate(15);
+        $q = trim((string) $request->query('q', ''));
+
+        $query = User::with('tipoUtilizador')->orderBy('nome');
+
+        if ($q !== '') {
+            $query->where(function ($outer) use ($q) {
+                $outer
+                    ->where('nome', 'like', '%' . $q . '%')
+                    ->orWhere('email', 'like', '%' . $q . '%');
+
+                if (ctype_digit($q)) {
+                    $outer->orWhere('id', (int) $q);
+                }
+
+                $outer->orWhereHas('tipoUtilizador', function ($tipo) use ($q) {
+                    $tipo->where('nome', 'like', '%' . $q . '%');
+                });
+            });
+        }
+
+        $utilizadores = $query
+            ->paginate(15)
+            ->withQueryString();
 
         return view('admin.utilizadores.index', compact('utilizadores'));
     }

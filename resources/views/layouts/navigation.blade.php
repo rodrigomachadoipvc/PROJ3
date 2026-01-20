@@ -8,13 +8,18 @@
         -webkit-backdrop-filter: blur(10px);
     "
 >
+    @php
+        $user = Auth::user();
+        $isAdmin = $user?->tipoUtilizador?->nome === 'Administrador';
+    @endphp
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
 
             {{-- Left side --}}
             <div class="flex">
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" class="inline-flex items-center">
+                    <a href="{{ route('user.dashboard') }}" class="inline-flex items-center">
                         <img
                             src="{{ asset('images/logo_communico.svg') }}"
                             alt="Communico"
@@ -25,21 +30,27 @@
 
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link
-                        :href="route('dashboard')"
-                        :active="request()->routeIs('dashboard')"
+                        :href="route('user.dashboard')"
+                        :active="request()->routeIs('user.dashboard')"
                         class="text-white/80 hover:text-white"
                     >
                         {{ __('Painel') }}
                     </x-nav-link>
+
+                    @if ($isAdmin)
+                        <x-nav-link
+                            :href="route('admin.dashboard')"
+                            :active="request()->routeIs('admin.*')"
+                            class="text-white/80 hover:text-white"
+                        >
+                            {{ __('Administração') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
             {{-- Right side --}}
             <div class="hidden sm:flex sm:items-center sm:ms-6">
-                @php
-                    $user = Auth::user();
-                @endphp
-
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button
@@ -126,12 +137,22 @@
     <div :class="{ 'block': open, 'hidden': ! open }" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link
-                :href="route('dashboard')"
-                :active="request()->routeIs('dashboard')"
+                    :href="route('user.dashboard')"
+                    :active="request()->routeIs('user.dashboard')"
                 class="text-white/85 hover:text-white"
             >
                 {{ __('Painel') }}
             </x-responsive-nav-link>
+
+                @if (($user?->tipoUtilizador?->nome ?? null) === 'Administrador')
+                    <x-responsive-nav-link
+                        :href="route('admin.dashboard')"
+                        :active="request()->routeIs('admin.*')"
+                        class="text-white/85 hover:text-white"
+                    >
+                        {{ __('Administração') }}
+                    </x-responsive-nav-link>
+                @endif
         </div>
 
         <div class="pt-4 pb-1 border-t" style="border-color: rgba(255,255,255,.10);">

@@ -1,9 +1,11 @@
 @props([
-    'name',
+    'name' => 'confirm',
     'title' => 'Confirmar ação',
     'content' => '',
     'method' => 'POST',
-    'actionRoute' => null,
+    'actionRoute' => '',
+    'confirmText' => 'Confirmar',
+    'cancelText' => 'Cancelar',
 ])
 
 @php
@@ -11,27 +13,19 @@
 @endphp
 
 <div
-    x-data="{ show: true }"
-    x-show="show"
-    x-on:keydown.escape.window="show = false"
-    class="fixed inset-0 z-50"
-    style="display: none;"
+    class="fixed inset-0"
+    style="z-index: 2147483647;"
+    x-on:keydown.escape.window="$dispatch('confirm-close', { name: '{{ $name }}' })"
 >
     {{-- Overlay --}}
     <div
-        x-show="show"
-        x-transition.opacity
         class="absolute inset-0"
         style="background: rgba(0,0,0,.55);"
-        x-on:click="show = false"
+        x-on:click="$dispatch('confirm-close', { name: '{{ $name }}' })"
     ></div>
 
     {{-- Modal --}}
-    <div
-        x-show="show"
-        x-transition
-        class="relative min-h-screen flex items-center justify-center p-4"
-    >
+    <div class="relative min-h-screen flex items-center justify-center p-4">
         <div
             class="comm-card rounded-2xl w-full max-w-lg overflow-hidden"
             style="box-shadow: 0 30px 80px rgba(0,0,0,.55);"
@@ -74,32 +68,36 @@
                     style="border-color: rgba(248,113,113,.35); background: rgba(248,113,113,.18);"
                     onclick="document.getElementById('{{ $name }}-form').submit();"
                 >
-                    Sim, eliminar
+                    {{ $confirmText }}
                 </button>
 
                 <button
                     type="button"
-                    x-on:click="show = false"
                     class="inline-flex justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white/85 border transition hover:text-white"
                     style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04);"
+                    x-on:click="$dispatch('confirm-close', { name: '{{ $name }}' })"
                 >
-                    Cancelar
+                    {{ $cancelText }}
                 </button>
             </div>
         </div>
     </div>
+
+    {{-- Form escondido que executa a ação --}}
+    <form
+        id="{{ $name }}-form"
+        method="POST"
+        style="display:none;"
+        x-bind:action="
+            (typeof deleteUrl !== 'undefined' && deleteUrl)
+                ? deleteUrl
+                : (@js($actionRoute ?? '') || '')
+        "
+    >
+        @csrf
+
+        @if ($httpMethod !== 'POST')
+            @method($httpMethod)
+        @endif
+    </form>
 </div>
-
-{{-- Form escondido que executa a ação --}}
-<form
-    id="{{ $name }}-form"
-    method="POST"
-    style="display: none;"
-    x-bind:action="(typeof actionRoute !== 'undefined' && actionRoute) ? actionRoute : (typeof deleteUrl !== 'undefined' ? deleteUrl : '')"
->
-    @csrf
-
-    @if ($httpMethod !== 'POST')
-        @method($httpMethod)
-    @endif
-</form>

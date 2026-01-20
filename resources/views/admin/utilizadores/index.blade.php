@@ -39,41 +39,100 @@
                                 </p>
                             </div>
 
-                            <a
-                                href="{{ route('admin.utilizadores.create') }}"
-                                class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold
-                                       text-white border transition
-                                       hover:brightness-110"
-                                style="
-                                    border-color: rgba(255,255,255,.12);
-                                    background: linear-gradient(180deg, rgba(96,165,250,.20), rgba(45,212,191,.12));
-                                "
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end"
+                                 x-data="{
+                                    q: @js((string) request('q', '')),
+                                    timer: null,
+                                    submitLive() {
+                                        clearTimeout(this.timer);
+                                        this.timer = setTimeout(() => {
+                                            const v = (this.q || '').trim();
+                                            if (v.length === 0) {
+                                                window.location.href = @js(route('admin.utilizadores.index'));
+                                                return;
+                                            }
+                                            this.$refs.searchForm.submit();
+                                        }, 250);
+                                    }
+                                 }"
                             >
-                                Criar utilizador
-                            </a>
+
+                                {{-- Pesquisa LIVE (sem Enter) --}}
+                                <form x-ref="searchForm" method="GET" action="{{ route('admin.utilizadores.index') }}" class="flex items-center gap-2">
+                                    <div class="relative">
+                                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3" style="color: rgba(255,255,255,.55);">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 6.3 6.3a7.5 7.5 0 0 0 10.35 10.35Z" />
+                                            </svg>
+                                        </span>
+
+                                        <input
+                                            type="text"
+                                            name="q"
+                                            x-model="q"
+                                            @input="submitLive()"
+                                            placeholder="Pesquisar por nome, email, ID ou tipo…"
+                                            class="w-full sm:w-80 rounded-xl border px-10 py-2 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-sky-400/35"
+                                            style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04);"
+                                            autocomplete="off"
+                                        />
+                                    </div>
+
+                                    @if (request('q'))
+                                        <a
+                                            href="{{ route('admin.utilizadores.index') }}"
+                                            class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-white/80 border transition hover:text-white hover:brightness-110"
+                                            style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
+                                        >
+                                            Limpar
+                                        </a>
+                                    @endif
+                                </form>
+
+                                <a
+                                    href="{{ route('admin.utilizadores.create') }}"
+                                    class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold
+                                           text-white border transition
+                                           hover:brightness-110"
+                                    style="
+                                        border-color: rgba(255,255,255,.12);
+                                        background: linear-gradient(180deg, rgba(96,165,250,.20), rgba(45,212,191,.12));
+                                    "
+                                >
+                                    Criar utilizador
+                                </a>
+                            </div>
                         </div>
 
-                        {{-- Tabela --}}
-                        <div class="overflow-x-auto rounded-2xl border" style="border-color: rgba(255,255,255,.10);">
+                        {{-- Tabela (scroll interno SEMPRE visível) --}}
+                        <div
+                            class="relative rounded-2xl border"
+                            style="
+                                border-color: rgba(255,255,255,.10);
+                                height: 62vh;
+                                overflow-y: scroll;
+                                overflow-x: auto;
+                            "
+                        >
                             <table class="min-w-full">
                                 <thead style="background: rgba(255,255,255,.04);">
                                     <tr class="border-b" style="border-color: rgba(255,255,255,.10);">
-                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10" style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
                                             ID
                                         </th>
-                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10" style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
                                             Nome
                                         </th>
-                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10" style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
                                             Email
                                         </th>
-                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10" style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
                                             Tipo
                                         </th>
-                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60">
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10" style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
                                             Estado
                                         </th>
-                                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/60">
+                                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/60 sticky top-0 z-10" style="background: rgba(255,255,255,.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
                                             Ações
                                         </th>
                                     </tr>
