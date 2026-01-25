@@ -37,7 +37,8 @@
                 </p>
             </div>
 
-            <div class="hidden sm:flex items-center gap-3 shrink-0 self-center">
+            {{-- ✅ ÚNICA ALTERAÇÃO: self-center -> self-start mt-5 (alinha com o "Olá") --}}
+            <div class="hidden sm:flex items-center gap-3 shrink-0 self-start mt-5">
                 <x-avatar :user="$user" size="md" />
                 <div class="leading-tight">
                     <div class="text-sm font-semibold text-white/85">
