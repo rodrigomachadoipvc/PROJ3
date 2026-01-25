@@ -60,7 +60,10 @@
                                 {{-- Pesquisa LIVE (sem Enter) --}}
                                 <form x-ref="searchForm" method="GET" action="{{ route('admin.utilizadores.index') }}" class="flex items-center gap-2">
                                     <div class="relative" style="width: 20rem; max-width: 100%; flex-shrink: 0;">
-                                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3" style="color: rgba(255,255,255,.55);">
+                                        <span
+                                            class="pointer-events-none absolute left-0 pl-3"
+                                            style="top: 50%; transform: translateY(-50%); color: rgba(255,255,255,.55);"
+                                        >
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 6.3 6.3a7.5 7.5 0 0 0 10.35 10.35Z" />
                                             </svg>
