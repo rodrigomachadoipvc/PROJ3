@@ -1,13 +1,13 @@
-@props(['href'])
+{{-- resources/views/components/dropdown-link.blade.php --}}
+@props(['active' => false])
 
-<a
-    href="{{ $href }}"
-    {{ $attributes->merge([
-        'class' => 'block w-full px-4 py-2 text-left text-sm leading-5
-                    text-white/80 hover:text-white hover:bg-white/5
-                    focus:outline-none focus:bg-white/5 focus:text-white
-                    transition'
-    ]) }}
->
+@php
+    $classes = 'block w-full px-4 py-2 text-left text-sm font-semibold leading-5
+                text-white/85 hover:text-white hover:bg-white/10
+                focus:outline-none focus:bg-white/10
+                transition duration-150 ease-in-out';
+@endphp
+
+<a {{ $attributes->merge(['class' => $classes]) }}>
     {{ $slot }}
 </a>
