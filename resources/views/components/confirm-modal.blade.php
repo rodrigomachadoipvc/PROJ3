@@ -17,16 +17,67 @@
     x-data="{
         open: true,
         actionStatic: @js($actionRoute),
+        _closing: false,
+
+        rearm() {
+            // ✅ Rearma o modal (open=true) APENAS depois do wrapper pai estar realmente escondido.
+            // Isto evita:
+            //  - 'cancelar' que reabre sozinho (rearmar cedo demais)
+            //  - não conseguir abrir novamente sem refresh (open preso em false)
+            const parent = this.$el.parentElement;
+
+            const isParentHidden = () => {
+                if (!parent) return true;
+                const cs = window.getComputedStyle(parent);
+                return cs.display === 'none';
+            };
+
+            const tryLater = (n = 0) => {
+                if (isParentHidden() || n >= 20) {
+                    this.open = true;
+                    return;
+                }
+                setTimeout(() => tryLater(n + 1), 25);
+            };
+
+            tryLater(0);
+        },
 
         close() {
+            if (this._closing) return;
+            this._closing = true;
+
             this.open = false;
 
-            // Fecha também os wrappers mais usados (evita ficar preso em TRUE e não reabrir)
+            // Fecha wrappers no mesmo scope (quando existem)
             try { if (typeof showDeleteModal !== 'undefined') showDeleteModal = false; } catch (e) {}
             try { if (typeof showMemberDeleteModal !== 'undefined') showMemberDeleteModal = false; } catch (e) {}
             try { if (typeof showRemoveModal !== 'undefined') showRemoveModal = false; } catch (e) {}
             try { if (typeof showConfirmModal !== 'undefined') showConfirmModal = false; } catch (e) {}
             try { if (typeof showModal !== 'undefined') showModal = false; } catch (e) {}
+
+            // ✅ Correção real: quando há x-teleport, o Alpine 'pai' não é ancestral no DOM.
+            // Então forçamos o fecho dos estados de modal em qualquer componente Alpine ativo.
+            try {
+                document.querySelectorAll('[x-data]').forEach((el) => {
+                    try {
+                        if (!el.__x || !el.__x.$data) return;
+                        const d = el.__x.$data;
+
+                        if (Object.prototype.hasOwnProperty.call(d, 'showDeleteModal')) d.showDeleteModal = false;
+                        if (Object.prototype.hasOwnProperty.call(d, 'showMemberDeleteModal')) d.showMemberDeleteModal = false;
+                        if (Object.prototype.hasOwnProperty.call(d, 'showRemoveModal')) d.showRemoveModal = false;
+                        if (Object.prototype.hasOwnProperty.call(d, 'showConfirmModal')) d.showConfirmModal = false;
+                        if (Object.prototype.hasOwnProperty.call(d, 'showModal')) d.showModal = false;
+                    } catch (e) {}
+                });
+            } catch (e) {}
+
+            // liberta a flag no tick seguinte (evita ter de clicar várias vezes)
+            this.$nextTick(() => {
+                this._closing = false;
+                this.rearm(); // ✅ o essencial: prepara para abrir de novo SEM refresh
+            });
         },
 
         action() {
