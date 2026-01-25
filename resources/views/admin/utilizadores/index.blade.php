@@ -59,7 +59,7 @@
 
                                 {{-- Pesquisa LIVE (sem Enter) --}}
                                 <form x-ref="searchForm" method="GET" action="{{ route('admin.utilizadores.index') }}" class="flex items-center gap-2">
-                                    <div class="relative">
+                                    <div class="relative" style="width: 20rem; max-width: 100%; flex-shrink: 0;">
                                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3" style="color: rgba(255,255,255,.55);">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 6.3 6.3a7.5 7.5 0 0 0 10.35 10.35Z" />
@@ -73,7 +73,7 @@
                                             @input="submitLive()"
                                             placeholder="Pesquisar por nome, email, ID ou tipo…"
                                             class="w-full sm:w-80 rounded-xl border px-10 py-2 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-sky-400/35"
-                                            style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04);"
+                                            style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04); width: 100%; box-sizing: border-box; padding-left: 2.5rem; padding-right: 2.5rem; padding-top: .5rem; padding-bottom: .5rem;"
                                             autocomplete="off"
                                         />
                                     </div>
