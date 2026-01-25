@@ -123,7 +123,7 @@
                             Interface limpa
                         </h3>
                         <p class="mt-2 text-sm leading-relaxed" style="color: var(--c-t2);">
-                            Visual moderno e focado no trabalho — rápido de usar, sem ruído.
+                            Visual moderno e focado no trabalho, rápido de usar e sem ruído.
                         </p>
                     </div>
                 </div>
