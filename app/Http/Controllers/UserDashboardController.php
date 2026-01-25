@@ -7,24 +7,19 @@ use Illuminate\Support\Facades\Auth;
 
 class UserDashboardController extends Controller
 {
-    /**
-     * Dashboard para utilizadores normais.
-     */
     public function index(Request $request)
     {
         $user = Auth::user();
 
-        // Carrega as conversas em que participa
         $recentConversas = $user->conversasAtivas()
             ->with(['ultimaMensagem.emissor', 'grupo', 'participantes'])
             ->orderBy('updated_at', 'desc')
-            ->limit(5)
+            ->limit(20)
             ->get();
 
-        // Carrega os grupos onde pertence
         $recentGrupos = $user->gruposAtivos()
             ->orderBy('created_at', 'desc')
-            ->limit(5)
+            ->limit(20)
             ->get();
 
         return view('dashboard.user', [

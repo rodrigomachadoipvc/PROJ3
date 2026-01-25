@@ -1,24 +1,29 @@
 <x-app-layout>
     @php
-        $user = Auth::user();
+        $user = $user ?? Auth::user();
 
-        // Nota: na tua app o campo é "nome" (não "name")
         $nome = $user->nome ?? $user->name ?? 'Utilizador';
 
-        // Estatísticas (simples e úteis para utilizador normal)
-        $totalConversas = method_exists($user, 'conversas') ? $user->conversas()->count() : 0;
-        $totalGrupos    = method_exists($user, 'grupos') ? $user->grupos()->count() : 0;
+        $totalConversas = method_exists($user, 'conversasAtivas')
+            ? $user->conversasAtivas()->count()
+            : (method_exists($user, 'conversas') ? $user->conversas()->count() : 0);
 
-        $mensagensEnviadas= \App\Models\Mensagem::where('emissor_id', $user->id)->count();
+        $totalGrupos = method_exists($user, 'gruposAtivos')
+            ? $user->gruposAtivos()->count()
+            : (method_exists($user, 'grupos') ? $user->grupos()->count() : 0);
+
+        $mensagensEnviadas = \App\Models\Mensagem::where('emissor_id', $user->id)->count();
 
         $anexosEnviados = \App\Models\Anexo::whereHas('mensagem', function ($q) use ($user) {
             $q->where('emissor_id', $user->id);
         })->count();
+
+        $chatUrl = rtrim(config('app.url') ?: url('/'), '/') . '/chat';
     @endphp
 
     <x-slot name="header">
         <div class="flex items-start justify-between gap-6">
-            <div>
+            <div class="min-w-0">
                 <div class="text-xs tracking-wide text-white/55 uppercase">
                     Painel
                 </div>
@@ -32,7 +37,7 @@
                 </p>
             </div>
 
-            <div class="hidden sm:flex items-center gap-3">
+            <div class="hidden sm:flex items-center gap-3 shrink-0 self-center">
                 <x-avatar :user="$user" size="md" />
                 <div class="leading-tight">
                     <div class="text-sm font-semibold text-white/85">
@@ -46,15 +51,15 @@
         </div>
     </x-slot>
 
-    <div class="py-10">
+    <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            {{-- Grelha Principal --}}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {{-- Conversas Recentes --}}
-                <div class="comm-card rounded-2xl overflow-hidden">
-                    <div class="p-6 sm:p-7 text-white/90">
+                <div class="comm-card rounded-2xl overflow-hidden relative">
+                    <a href="{{ $chatUrl }}" class="absolute inset-0 z-0" aria-label="Abrir chat"></a>
+
+                    <div class="p-6 sm:p-7 text-white/90 relative z-10">
                         <div class="flex items-end justify-between mb-5">
                             <div>
                                 <h3 class="text-lg font-semibold text-white">
@@ -74,7 +79,8 @@
                             </a>
                         </div>
 
-                        <div class="space-y-3">
+                        <div class="space-y-3 pr-1"
+                             style="max-height: 270px; overflow-y: auto;">
                             @forelse ($recentConversas as $conversa)
                                 @php
                                     $outro = $conversa->participantes->where('id', '!=', $user->id)->first();
@@ -128,7 +134,6 @@
                     </div>
                 </div>
 
-                {{-- Grupos --}}
                 <div class="comm-card rounded-2xl overflow-hidden">
                     <div class="p-6 sm:p-7 text-white/90">
                         <div class="flex items-end justify-between mb-5">
@@ -147,7 +152,8 @@
                             </span>
                         </div>
 
-                        <div class="space-y-3">
+                        <div class="space-y-3 pr-1"
+                             style="max-height: 270px; overflow-y: auto;">
                             @forelse ($recentGrupos as $grupo)
                                 <a
                                     href="{{ route('chat.index', ['g' => $grupo->id]) }}"
@@ -184,7 +190,6 @@
                     </div>
                 </div>
 
-                {{-- Estatísticas (substitui "A Sua Conta") --}}
                 <div class="comm-card rounded-2xl overflow-hidden">
                     <div class="p-6 sm:p-7 text-white/90">
                         <div class="mb-5">
@@ -229,36 +234,12 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="mt-5 flex items-center justify-between rounded-2xl border px-4 py-3"
-                             style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.02);">
-                            <div class="flex items-center gap-3">
-                                <x-avatar :user="$user" size="sm" />
-                                <div class="leading-tight">
-                                    <div class="text-sm font-semibold text-white/85">
-                                        {{ $nome }}
-                                    </div>
-                                    <div class="text-xs text-white/55">
-                                        {{ $user->email }}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <a
-                                href="{{ route('profile.edit') }}"
-                                class="text-sm font-semibold hover:underline"
-                                style="color: rgba(96,165,250,.95);"
-                            >
-                                Gerir perfil →
-                            </a>
-                        </div>
                     </div>
                 </div>
 
             </div>
 
-            {{-- Ações rápidas --}}
-            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
 
                 <a
                     href="{{ route('chat.index') }}"

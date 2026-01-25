@@ -94,7 +94,7 @@
                 </h1>
 
                 <p class="mt-4 max-w-3xl text-base sm:text-lg leading-relaxed" style="color: var(--c-t2);">
-                    Comunicação interna simples, rápida e organizada — conversas diretas e em grupo,
+                    Comunicação interna simples, rápida e organizada. Conversas diretas e em grupo,
                     com gestão de utilizadores e permissões num só lugar.
                 </p>
 
