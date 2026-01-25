@@ -23,6 +23,10 @@ use App\Http\Controllers\Admin\EstatisticasController;
 */
 
 Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('user.dashboard');
+    }
+
     return view('welcome');
 });
 
