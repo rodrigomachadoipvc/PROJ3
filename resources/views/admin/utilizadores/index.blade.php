@@ -12,31 +12,6 @@
                 <div class="comm-card rounded-2xl overflow-hidden">
                     <div class="p-6 sm:p-8 text-white/90">
 
-                        {{-- FIX (PROD): alinhamento do ícone + padding consistente --}}
-                        <style>
-                            .comm-search {
-                                position: relative;
-                                flex: 0 0 auto;
-                                width: min(20rem, 100%);
-                            }
-                            .comm-search-icon {
-                                position: absolute;
-                                left: 12px;
-                                top: 50%;
-                                transform: translateY(-50%);
-                                pointer-events: none;
-                                color: rgba(255,255,255,.55);
-                                line-height: 0;
-                            }
-                            .comm-search-input {
-                                width: 100%;
-                                padding-left: 2.5rem !important;
-                                padding-right: .75rem !important;
-                                padding-top: .5rem !important;
-                                padding-bottom: .5rem !important;
-                            }
-                        </style>
-
                         {{-- Mensagens --}}
                         @if (session('success'))
                             <div class="mb-5 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
@@ -65,6 +40,7 @@
                             </div>
 
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end"
+                                 style="gap: 14px;"
                                  x-data="{
                                     q: @js((string) request('q', '')),
                                     timer: null,
@@ -84,8 +60,8 @@
 
                                 {{-- Pesquisa LIVE (sem Enter) --}}
                                 <form x-ref="searchForm" method="GET" action="{{ route('admin.utilizadores.index') }}" class="flex items-center gap-2">
-                                    <div class="comm-search">
-                                        <span class="comm-search-icon">
+                                    <div class="relative">
+                                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3" style="color: rgba(255,255,255,.55);">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 6.3 6.3a7.5 7.5 0 0 0 10.35 10.35Z" />
                                             </svg>
@@ -97,22 +73,23 @@
                                             x-model="q"
                                             @input="submitLive()"
                                             placeholder="Pesquisar por nome, email, ID ou tipo…"
-                                            class="comm-search-input rounded-xl border text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-sky-400/35"
+                                            class="w-full sm:w-80 rounded-xl border px-10 py-2 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-sky-400/35"
                                             style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04);"
                                             autocomplete="off"
                                         />
                                     </div>
-
-                                    @if (request('q'))
-                                        <a
-                                            href="{{ route('admin.utilizadores.index') }}"
-                                            class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-white/80 border transition hover:text-white hover:brightness-110"
-                                            style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
-                                        >
-                                            Limpar
-                                        </a>
-                                    @endif
                                 </form>
+
+                                {{-- Limpar (fora do form para não sobrepor) --}}
+                                @if (request('q'))
+                                    <a
+                                        href="{{ route('admin.utilizadores.index') }}"
+                                        class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-white/80 border transition hover:text-white hover:brightness-110"
+                                        style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
+                                    >
+                                        Limpar
+                                    </a>
+                                @endif
 
                                 <a
                                     href="{{ route('admin.utilizadores.create') }}"
