@@ -26,8 +26,8 @@ class EstatisticasController extends Controller
         $topUsers = $this->stats->topUsers($f);
         $topGrupos = $this->stats->topGrupos($f);
 
-        $grupos = Grupo::orderBy('nome')->get(['id','nome']);
-        $users  = User::orderBy('nome')->get(['id','nome']);
+        $grupos = Grupo::orderBy('nome')->get(['id', 'nome']);
+        $users  = User::orderBy('nome')->get(['id', 'nome']);
 
         $chartData = [
             'mensagensPorDia' => $serie,
@@ -37,12 +37,18 @@ class EstatisticasController extends Controller
             ],
             'topUsers' => [
                 'labels' => $topUsers->pluck('nome')->toArray(),
-                'data' => $topUsers->pluck('total')->map(fn($n)=>(int)$n)->toArray(),
+                'data' => $topUsers->pluck('total')->map(fn($n) => (int)$n)->toArray(),
             ],
         ];
 
         return view('admin.estatisticas.index', compact(
-            'f','kpis','chartData','topUsers','topGrupos','grupos','users'
+            'f',
+            'kpis',
+            'chartData',
+            'topUsers',
+            'topGrupos',
+            'grupos',
+            'users'
         ));
     }
 
@@ -64,7 +70,7 @@ class EstatisticasController extends Controller
     public function exportCsv(Request $request)
     {
         $dataset = $request->string('dataset')->toString(); // mensagens|anexos
-        if (!in_array($dataset, ['mensagens','anexos'], true)) {
+        if (!in_array($dataset, ['mensagens', 'anexos'], true)) {
             abort(422, 'Dataset inválido.');
         }
 
@@ -90,14 +96,51 @@ class EstatisticasController extends Controller
         $topUsers = $this->stats->topUsers($f);
         $topGrupos = $this->stats->topGrupos($f);
 
+        // ✅ Charts (capturados no browser) — data:image/(jpeg|png);base64,...
+        $chartImages = [
+            'mensagensDia' => $this->sanitizeDataUri($request->input('chart_mensagens_dia')),
+            'dmGrupo'      => $this->sanitizeDataUri($request->input('chart_dm_grupo')),
+            'topUsers'     => $this->sanitizeDataUri($request->input('chart_top_users')),
+        ];
+
         try {
-            $pdf = Pdf::loadView('admin.estatisticas.pdf', compact('f','kpis','serie','topUsers','topGrupos'))
-                ->setPaper('a4', 'portrait');
+            $pdf = Pdf::loadView('admin.estatisticas.pdf', compact(
+                'f',
+                'kpis',
+                'serie',
+                'topUsers',
+                'topGrupos',
+                'chartImages'
+            ))
+                ->setPaper('a4', 'portrait')
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', true);
 
             return $pdf->download('communico_relatorio_estatisticas.pdf');
         } catch (\Throwable $e) {
             report($e);
             abort(501, 'Exportação PDF indisponível neste ambiente. Confirma a versão do barryvdh/laravel-dompdf e dependências.');
         }
+    }
+
+    private function sanitizeDataUri($value): ?string
+    {
+        if (!is_string($value)) return null;
+
+        $value = trim($value);
+        if ($value === '') return null;
+
+        // Permite apenas data URIs de imagem base64
+        if (!preg_match('#^data:image/(png|jpeg|jpg);base64,#i', $value)) {
+            return null;
+        }
+
+        // opcional: pequena salvaguarda contra payloads absurdos
+        // (ajusta se precisares; 4MB de string base64 é mais que suficiente para 3 gráficos)
+        if (strlen($value) > 4_000_000) {
+            return null;
+        }
+
+        return $value;
     }
 }

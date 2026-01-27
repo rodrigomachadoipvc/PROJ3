@@ -7,6 +7,24 @@
 
         <title>{{ config('app.name', 'Communico') }}</title>
 
+        @php
+            $logoPath = public_path('images/logo_communico.svg');
+            $icoPath  = public_path('favicon.ico');
+
+            $vLogo = file_exists($logoPath) ? filemtime($logoPath) : null;
+            $vIco  = file_exists($icoPath)  ? filemtime($icoPath)  : null;
+
+            $logoHref = asset('images/logo_communico.svg') . ($vLogo ? '?v=' . $vLogo : '');
+            $icoHref  = asset('favicon.ico') . ($vIco ? '?v=' . $vIco : '');
+        @endphp
+
+        {{-- Favicon / Logo no separador --}}
+        <link rel="icon" type="image/svg+xml" href="{{ $logoHref }}">
+        <link rel="alternate icon" href="{{ $icoHref }}">
+        <link rel="shortcut icon" href="{{ $icoHref }}">
+        <link rel="apple-touch-icon" href="{{ $logoHref }}">
+        <meta name="theme-color" content="#0B1220">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />

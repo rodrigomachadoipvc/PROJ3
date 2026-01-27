@@ -13,8 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Anexo;
 use App\Http\Middleware\EnsureUserIsAdmin;
-use App\Http\Controllers\Admin\EstatisticasController; 
-
+use App\Http\Controllers\Admin\EstatisticasController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,40 +31,22 @@ Route::get('/', function () {
 
 require __DIR__ . '/auth.php';
 
-
 /*
 |--------------------------------------------------------------------------
 | Rotas Autenticadas
 |--------------------------------------------------------------------------
-|
-| Requisito: após login, TODOS (user e admin) devem ser redirecionados para
-| /user/dashboard.
-|
-| A área /admin mantém-se protegida pelo middleware EnsureUserIsAdmin.
-|
 */
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // ROTA DE COMPATIBILIDADE (/dashboard) → encaminha sempre para o painel de utilizador.
     Route::get('/dashboard', function () {
         return redirect()->route('user.dashboard');
     })->name('dashboard');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Dashboard do Utilizador Normal
-    |--------------------------------------------------------------------------
-    */
     Route::get('/user/dashboard', [UserDashboardController::class, 'index'])
         ->middleware(['auth', 'verified'])
         ->name('user.dashboard');
-        
-    /*
-    |--------------------------------------------------------------------------
-    | Perfil do Utilizador
-    |--------------------------------------------------------------------------
-    */
+
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
 
@@ -78,11 +59,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile/avatar/remove', [ProfileController::class, 'removeAvatar'])
         ->name('profile.avatar.remove');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Chat
-    |--------------------------------------------------------------------------
-    */
     Route::get('/chat', [ChatController::class, 'index'])
         ->name('chat.index');
 
@@ -94,7 +70,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             abort(404);
         }
 
-        // Imagens: mostrar inline (serve para <img src="...">)
         if (str_starts_with($anexo->mime_type, 'image/')) {
             $path = Storage::disk('public')->path($anexo->caminho_storage);
 
@@ -104,7 +79,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ]);
         }
 
-        // Outros: força download
         return Storage::disk('public')->download(
             $anexo->caminho_storage,
             $anexo->nome_original
@@ -112,7 +86,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     })->name('anexos.ver');
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -153,5 +126,8 @@ Route::middleware(['auth', 'verified', EnsureUserIsAdmin::class])
         Route::get('estatisticas', [EstatisticasController::class, 'index'])->name('estatisticas.index');
         Route::get('estatisticas/export/csv', [EstatisticasController::class, 'exportCsv'])->name('estatisticas.export.csv');
         Route::get('estatisticas/export/excel', [EstatisticasController::class, 'exportExcel'])->name('estatisticas.export.excel');
-        Route::get('estatisticas/export/pdf', [EstatisticasController::class, 'exportPdf'])->name('estatisticas.export.pdf');
+
+        // ✅ PDF: GET (compatibilidade) + POST (com gráficos)
+        Route::match(['get', 'post'], 'estatisticas/export/pdf', [EstatisticasController::class, 'exportPdf'])
+            ->name('estatisticas.export.pdf');
     });

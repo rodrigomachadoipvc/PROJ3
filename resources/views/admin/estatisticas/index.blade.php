@@ -20,14 +20,40 @@
                     Exportar Excel
                 </a>
 
-                <a
-                    href="{{ route('admin.estatisticas.export.pdf', request()->query()) }}"
-                    class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition
-                           hover:bg-white/10"
-                    style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.04);"
+                {{-- ✅ PDF (POST) com captura dos gráficos --}}
+                <form
+                    id="pdf-export-form"
+                    method="POST"
+                    action="{{ route('admin.estatisticas.export.pdf') }}"
+                    class="inline"
                 >
-                    PDF relatório
-                </a>
+                    @csrf
+
+                    {{-- Mantém os filtros atuais no POST --}}
+                    @foreach (request()->query() as $k => $v)
+                        <input type="hidden" name="{{ $k }}" value="{{ $v }}">
+                    @endforeach
+
+                    {{-- Imagens dos gráficos (data URI) --}}
+                    <input type="hidden" name="chart_mensagens_dia" id="pdf_chart_mensagens_dia">
+                    <input type="hidden" name="chart_dm_grupo" id="pdf_chart_dm_grupo">
+                    <input type="hidden" name="chart_top_users" id="pdf_chart_top_users">
+
+                    <button
+                        type="submit"
+                        class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition
+                               hover:bg-white/10"
+                        style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.04);"
+                    >
+                        PDF relatório
+                    </button>
+
+                    <noscript>
+                        <div class="mt-2 text-xs text-white/60">
+                            JavaScript desativado: o PDF será gerado sem gráficos.
+                        </div>
+                    </noscript>
+                </form>
 
                 <div class="hidden sm:flex items-center gap-2">
                     <a
@@ -401,14 +427,13 @@
         </div>
     </div>
 
-    {{-- CHARTS --}}
+    {{-- CHARTS + PDF CAPTURE --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const data = @json($chartData);
 
             const init = () => {
                 if (!window.Chart) {
-                    // Se por algum motivo o module ainda não executou, tenta outra vez rapidamente.
                     setTimeout(init, 50);
                     return;
                 }
@@ -475,6 +500,61 @@
             };
 
             init();
+
+            // ✅ Export PDF: captura canvas -> data URI e envia no POST
+            const pdfForm = document.getElementById('pdf-export-form');
+            if (pdfForm) {
+                let prepared = false;
+
+                const canvasToDataUrlWithBg = (canvas, bg = '#0B1220') => {
+                    try {
+                        const w = canvas.width;
+                        const h = canvas.height;
+
+                        // Canvas “real” do Chart.js tem scale interno; usa width/height reais
+                        const tmp = document.createElement('canvas');
+                        tmp.width = w;
+                        tmp.height = h;
+
+                        const tctx = tmp.getContext('2d');
+                        tctx.fillStyle = bg;
+                        tctx.fillRect(0, 0, w, h);
+                        tctx.drawImage(canvas, 0, 0);
+
+                        // JPEG reduz tamanho do POST
+                        return tmp.toDataURL('image/jpeg', 0.88);
+                    } catch (e) {
+                        return '';
+                    }
+                };
+
+                const prepareCharts = () => {
+                    const c1 = document.getElementById('chartMensagensDia');
+                    const c2 = document.getElementById('chartDmGrupo');
+                    const c3 = document.getElementById('chartTopUsers');
+
+                    const i1 = document.getElementById('pdf_chart_mensagens_dia');
+                    const i2 = document.getElementById('pdf_chart_dm_grupo');
+                    const i3 = document.getElementById('pdf_chart_top_users');
+
+                    if (i1 && c1) i1.value = canvasToDataUrlWithBg(c1, '#0B1220');
+                    if (i2 && c2) i2.value = canvasToDataUrlWithBg(c2, '#0B1220');
+                    if (i3 && c3) i3.value = canvasToDataUrlWithBg(c3, '#0B1220');
+
+                    prepared = true;
+                };
+
+                pdfForm.addEventListener('submit', function (e) {
+                    if (prepared) return;
+                    e.preventDefault();
+
+                    // Pequeno delay para garantir render final (fonts/ticks)
+                    setTimeout(() => {
+                        prepareCharts();
+                        pdfForm.submit(); // submit programático não dispara novamente o handler
+                    }, 40);
+                });
+            }
         });
     </script>
 </x-app-layout>

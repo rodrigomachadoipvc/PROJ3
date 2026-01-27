@@ -6,6 +6,24 @@
 
     <title>Communico - Chat Interno</title>
 
+    @php
+        $logoPath = public_path('images/logo_communico.svg');
+        $icoPath  = public_path('favicon.ico');
+
+        $vLogo = file_exists($logoPath) ? filemtime($logoPath) : null;
+        $vIco  = file_exists($icoPath)  ? filemtime($icoPath)  : null;
+
+        $logoHref = asset('images/logo_communico.svg') . ($vLogo ? '?v=' . $vLogo : '');
+        $icoHref  = asset('favicon.ico') . ($vIco ? '?v=' . $vIco : '');
+    @endphp
+
+    {{-- Favicon / Logo no separador --}}
+    <link rel="icon" type="image/svg+xml" href="{{ $logoHref }}">
+    <link rel="alternate icon" href="{{ $icoHref }}">
+    <link rel="shortcut icon" href="{{ $icoHref }}">
+    <link rel="apple-touch-icon" href="{{ $logoHref }}">
+    <meta name="theme-color" content="#0B1220">
+
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
@@ -81,12 +99,13 @@
 
                 {{-- Logo (public/images/logo_communico.svg) --}}
                 <div class="mb-8">
-                        <img
-                        src="{{ asset('images/logo_communico.svg') }}"
+                    <img
+                        src="{{ $logoHref }}"
                         alt="Communico"
-                        class="h-10 w-auto"
+                        class="h-12 w-auto"
+                        loading="eager"
+                        decoding="async"
                     />
-                    
                 </div>
 
                 <h1 class="text-4xl sm:text-5xl font-semibold tracking-tight" style="color: var(--c-t1);">
