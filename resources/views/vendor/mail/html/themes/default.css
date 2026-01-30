@@ -1,0 +1,162 @@
+/* Communico Mail Theme (dark, high-contrast) */
+
+body, body * {
+  box-sizing: border-box;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+body {
+  background-color: #070B14;
+  color: rgba(255,255,255,.82);
+  height: 100%;
+  line-height: 1.5;
+  margin: 0;
+  width: 100% !important;
+  -webkit-text-size-adjust: none;
+}
+
+a { color: #60A5FA; }
+a:hover { opacity: .9; }
+
+.wrapper {
+  background-color: #070B14;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.content {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* Header */
+.header {
+  padding: 24px 0 10px;
+  text-align: center;
+}
+.header a {
+  color: rgba(255,255,255,.92);
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+  letter-spacing: .2px;
+}
+
+/* Body */
+.body {
+  background-color: #070B14;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.inner-body {
+  background-color: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 18px;
+  margin: 0 auto;
+  padding: 0;
+  width: 640px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.40);
+}
+
+.content-cell { padding: 34px; }
+
+/* Typography */
+h1 {
+  color: rgba(255,255,255,.96);
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 0;
+  text-align: left;
+}
+h2 {
+  color: rgba(255,255,255,.94);
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 0;
+  text-align: left;
+}
+p, ul, ol, blockquote {
+  color: rgba(255,255,255,.78);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: left;
+}
+p.sub { font-size: 12px; color: rgba(255,255,255,.60); }
+
+hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,.10);
+  margin: 26px 0;
+}
+
+/* Buttons */
+.button {
+  border-radius: 999px;
+  display: inline-block;
+  text-decoration: none;
+  -webkit-text-size-adjust: none;
+  text-align: center;
+}
+
+.button-primary {
+  background-color: #2DD4BF;
+  border-top: 12px solid #2DD4BF;
+  border-right: 22px solid #2DD4BF;
+  border-bottom: 12px solid #2DD4BF;
+  border-left: 22px solid #2DD4BF;
+  color: #07121F;
+  font-weight: 800;
+}
+
+.button-blue {
+  background-color: #60A5FA;
+  border-top: 12px solid #60A5FA;
+  border-right: 22px solid #60A5FA;
+  border-bottom: 12px solid #60A5FA;
+  border-left: 22px solid #60A5FA;
+  color: #07121F;
+  font-weight: 800;
+}
+
+.panel {
+  background-color: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 14px;
+}
+
+.panel-content { padding: 16px; }
+
+.subcopy {
+  border-top: 1px solid rgba(255,255,255,.10);
+  margin-top: 22px;
+  padding-top: 18px;
+}
+
+.subcopy p {
+  font-size: 12px;
+  color: rgba(255,255,255,.60);
+}
+
+/* Footer */
+.footer {
+  margin: 0 auto;
+  padding: 20px 0 28px;
+  text-align: center;
+  width: 640px;
+}
+.footer p {
+  color: rgba(255,255,255,.55);
+  font-size: 12px;
+  text-align: center;
+  margin: 0;
+}
+
+/* Responsivo */
+@media only screen and (max-width: 680px) {
+  .inner-body, .footer { width: 100% !important; }
+  .content-cell { padding: 22px !important; }
+}

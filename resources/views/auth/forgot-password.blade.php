@@ -6,7 +6,7 @@
                 Recuperar palavra-passe
             </h1>
             <p class="mt-2 text-sm text-white/65">
-                {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
+                {{ __('Esqueceu sua palavra-passe? Sem problemas. Basta nos informar seu endereço de e-mail e enviaremos um e-mail com um link de redefinição de palavra-passe que permitirá que você escolha uma nova.') }}
             </p>
         </div>
 
@@ -37,7 +37,7 @@
             <!-- Submit -->
             <div class="pt-2">
                 <x-primary-button class="w-full justify-center py-3">
-                    {{ __('Email Password Reset Link') }}
+                    {{ __('Link de redefinição de palavra-passe de e-mail') }}
                 </x-primary-button>
             </div>
         </form>

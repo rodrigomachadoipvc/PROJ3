@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use App\Notifications\PasswordAlteradaNotification;
 
 class PasswordController extends Controller
 {
@@ -34,5 +35,11 @@ class PasswordController extends Controller
         ]);
 
         return back()->with('status', 'password-updated');
+
+        $request->user()->notify(new PasswordAlteradaNotification(
+            ip: $request->ip(),
+            userAgent: (string) $request->userAgent(),
+            quando: now()->format('Y-m-d H:i')
+        ));
     }
 }

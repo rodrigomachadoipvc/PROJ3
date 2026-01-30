@@ -6,7 +6,7 @@
                 Criar conta
             </h1>
             <p class="mt-1 text-sm text-white/65">
-                Regista-te para começar a usar o Communico
+                Cadastra-te-te para começar a usar o Communico
             </p>
         </div>
 
@@ -15,7 +15,7 @@
 
             <!-- Nome -->
             <div>
-                <x-input-label for="nome" :value="__('Name')" class="text-white/80" />
+                <x-input-label for="nome" :value="__('Nome')" class="text-white/80" />
 
                 <x-text-input
                     id="nome"
@@ -52,7 +52,7 @@
 
             <!-- Password -->
             <div>
-                <x-input-label for="password" :value="__('Password')" class="text-white/80" />
+                <x-input-label for="password" :value="__('Palavra-passe')" class="text-white/80" />
 
                 <x-text-input
                     id="password"
@@ -69,7 +69,7 @@
 
             <!-- Confirm Password -->
             <div>
-                <x-input-label for="password_confirmation" :value="__('Confirm Password')" class="text-white/80" />
+                <x-input-label for="password_confirmation" :value="__('Confirmar Palavra-passe')" class="text-white/80" />
 
                 <x-text-input
                     id="password_confirmation"
@@ -91,11 +91,11 @@
                     class="text-sm font-semibold hover:underline"
                     style="color: rgba(96,165,250,.95);"
                 >
-                    {{ __('Already registered?') }}
+                    {{ __('Já está cadastrado?') }}
                 </a>
 
                 <x-primary-button class="px-6 py-3">
-                    {{ __('Register') }}
+                    {{ __('Cadastrar') }}
                 </x-primary-button>
             </div>
         </form>

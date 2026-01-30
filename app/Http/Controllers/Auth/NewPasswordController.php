@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Notifications\PasswordAlteradaNotification;
 
 class NewPasswordController extends Controller
 {
@@ -46,6 +47,12 @@ class NewPasswordController extends Controller
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                $user->notify(new PasswordAlteradaNotification(
+                    ip: $request->ip(),
+                    userAgent: (string) $request->userAgent(),
+                    quando: now()->format('Y-m-d H:i')
+                ));
 
                 event(new PasswordReset($user));
             }

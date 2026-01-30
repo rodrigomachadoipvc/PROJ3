@@ -39,7 +39,7 @@ class UtilizadorInicialSeeder extends Seeder
                 [
                     'tipo_utilizador_id' => $tipoUtilizadorId,
                     'nome' => 'Admin Comunico',
-                    'password' => Hash::make('password'), // Senha: password
+                    'password' => Hash::make('password'), 
                     'status' => 'ativo',
                     'email_verified_at' => now(),
                     'created_at' => now(),

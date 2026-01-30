@@ -6,7 +6,7 @@
                 Confirmar palavra-passe
             </h1>
             <p class="mt-2 text-sm text-white/65">
-                {{ __('This is a secure area of the application. Please confirm your password before continuing.') }}
+                {{ __('Esta é uma área segura do aplicativo. Por favor, confirme sua palavra-passe antes de continuar.') }}
             </p>
         </div>
 
@@ -15,7 +15,7 @@
 
             <!-- Password -->
             <div>
-                <x-input-label for="password" :value="__('Password')" class="text-white/80" />
+                <x-input-label for="password" :value="__('Palavra-passe')" class="text-white/80" />
 
                 <x-text-input
                     id="password"
@@ -33,7 +33,7 @@
             <!-- Submit -->
             <div class="pt-2">
                 <x-primary-button class="w-full justify-center py-3">
-                    {{ __('Confirm') }}
+                    {{ __('Confirmar') }}
                 </x-primary-button>
             </div>
         </form>
