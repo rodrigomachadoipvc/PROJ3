@@ -37,7 +37,7 @@
 
             <!-- Password -->
             <div>
-                <x-input-label for="password" :value="__('Password')" class="text-white/80" />
+                <x-input-label for="password" :value="__('Palavra-passe')" class="text-white/80" />
 
                 <x-text-input
                     id="password"
@@ -54,7 +54,7 @@
 
             <!-- Confirm Password -->
             <div>
-                <x-input-label for="password_confirmation" :value="__('Confirm Password')" class="text-white/80" />
+                <x-input-label for="password_confirmation" :value="__('Confirmar Palavra-passe')" class="text-white/80" />
 
                 <x-text-input
                     id="password_confirmation"
@@ -72,7 +72,7 @@
             <!-- Submit -->
             <div class="pt-2">
                 <x-primary-button class="w-full justify-center py-3">
-                    {{ __('Reset Password') }}
+                    {{ __('Nova Palavra-passe') }}
                 </x-primary-button>
             </div>
         </form>

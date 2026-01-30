@@ -32,12 +32,12 @@
                            placeholder-white/40 focus:border-white/20 focus:ring-0 rounded-xl"
                 />
 
-                <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                <x-input-error :messages="$errors->get('Email')" class="mt-2" />
             </div>
 
             <!-- Password -->
             <div>
-                <x-input-label for="password" :value="__('Password')" class="text-white/80" />
+                <x-input-label for="password" :value="__('Palavra-passe')" class="text-white/80" />
 
                 <x-text-input
                     id="password"
@@ -63,7 +63,7 @@
                         style="accent-color: rgb(45, 212, 191);"
                     >
                     <span class="ms-2 text-sm text-white/70">
-                        {{ __('Remember me') }}
+                        {{ __('Relembrar') }}
                     </span>
                 </label>
 
@@ -73,7 +73,7 @@
                         class="text-sm font-semibold hover:underline"
                         style="color: rgba(96,165,250,.95);"
                     >
-                        {{ __('Forgot your password?') }}
+                        {{ __('Esqueceu sua palavra-passe?') }}
                     </a>
                 @endif
             </div>
@@ -81,7 +81,7 @@
             <!-- Submit -->
             <div class="pt-2">
                 <x-primary-button class="w-full justify-center py-3">
-                    {{ __('Log in') }}
+                    {{ __('Entrar') }}
                 </x-primary-button>
             </div>
         </form>

@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use App\Notifications\CommunicoVerifyEmail;
+use App\Notifications\CommunicoResetPassword;
 use App\Models\TipoUtilizador;
 use App\Services\SystemConversationService;
 use Throwable;
@@ -166,5 +168,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function gruposAtivos(): BelongsToMany
     {
         return $this->grupos()->wherePivotNull('left_at');
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new CommunicoResetPassword($token));
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new CommunicoVerifyEmail());
     }
 }
