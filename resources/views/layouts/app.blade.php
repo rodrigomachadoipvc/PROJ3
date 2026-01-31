@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full" style="background-color: var(--c-bg-0);">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,6 +16,8 @@
 
             $logoHref = asset('images/logo_communico.svg') . ($vLogo ? '?v=' . $vLogo : '');
             $icoHref  = asset('favicon.ico') . ($vIco ? '?v=' . $vIco : '');
+
+            $isChat = request()->routeIs('chat.index');
         @endphp
 
         {{-- Favicon / Logo no separador --}}
@@ -33,12 +35,21 @@
         @livewireStyles
     </head>
 
-    <body class="font-sans antialiased text-white">
-        {{-- Fundo global (já tens comm-bg/comm-card definidos) --}}
-        <div class="min-h-screen comm-bg relative overflow-hidden flex flex-col">
-            @include('layouts.navigation')
+    <body
+        class="h-full font-sans antialiased text-white {{ $isChat ? 'overflow-hidden' : '' }}"
+        style="background-color: var(--c-bg-0);"
+    >
+        {{-- Wrapper global --}}
+        <div
+            class="{{ $isChat ? 'h-full' : 'min-h-screen' }} comm-bg relative flex flex-col w-full overflow-hidden"
+            style="background-color: var(--c-bg-0);"
+        >
+            {{-- FIX: garante que a navbar fica SEMPRE acima do overlay do chat --}}
+            <div class="relative z-50">
+                @include('layouts.navigation')
+            </div>
 
-            {{-- Header (deixa de ser “modo claro”) --}}
+            {{-- Header (quando usado em páginas normais) --}}
             @isset($header)
                 <header class="pt-8 pb-4">
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,7 +60,8 @@
                 </header>
             @endisset
 
-            <main class="flex-1">
+            {{-- IMPORTANTÍSSIMO: no chat, o main tem de ser um “viewport” sem scroll global --}}
+            <main class="flex-1 {{ $isChat ? 'min-h-0 overflow-hidden' : '' }}">
                 {{ $slot }}
             </main>
         </div>

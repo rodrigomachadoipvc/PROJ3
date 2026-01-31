@@ -15,6 +15,7 @@ use App\Models\Conversa;
 use App\Models\Mensagem;
 use App\Models\Anexo;
 use App\Models\Grupo;
+use App\Services\SystemConversationService;
 use Illuminate\Support\Collection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -27,6 +28,9 @@ class ChatInterface extends Component
     public Collection $mensagens;
     public Collection $conversas;
     public Collection $outrosUtilizadores;
+
+    public ?Conversa $conversaSistema = null;
+    public int $mensagensPorDefeito = 80;
     
     public bool $mostrarMembrosGrupo = false;
     public ?Collection $membrosGrupo = null;
@@ -43,7 +47,8 @@ class ChatInterface extends Component
 
     protected $listeners = [
         'mensagemRecebidaRealtime' => 'onMensagemRecebidaRealtime',
-        'clearHighlight' => 'clearHighlight', // novo listener
+        'mensagemRecebidaRealtimeSidebar' => 'onMensagemRecebidaRealtimeSidebar',
+        'clearHighlight' => 'clearHighlight',
     ];
 
     public bool $mostrarEditarGrupo = false;
@@ -79,6 +84,8 @@ class ChatInterface extends Component
     {
         $utilizador = Auth::user();
 
+        $this->carregarConversaSistema(true);
+
         $this->mensagens = new Collection();
 
         $dms = $utilizador->conversasParticipadas()
@@ -103,26 +110,142 @@ class ChatInterface extends Component
             ])
             ->get();
 
-        $this->conversas = $dms->merge($grupos)->unique('id')->sortByDesc('is_pinned')->sortByDesc('updated_at');
+        $merged = $dms->merge($grupos)->unique('id');
+
+        $merged = $this->removerSistemaDaLista($merged);
+
+        $this->conversas = $merged->sort(function ($a, $b) {
+            $aPinned = $a->is_pinned ?? 0;
+            $bPinned = $b->is_pinned ?? 0;
+            if ($aPinned !== $bPinned) {
+                return $bPinned - $aPinned;
+            }
+            $aTs = $this->conversaLastActivityTs($a);
+            $bTs = $this->conversaLastActivityTs($b);
+            if ($aTs !== $bTs) {
+                return $bTs - $aTs;
+            }
+            // Tie-break por ultima_mensagem_id desc
+            $aId = (int) $a->ultima_mensagem_id ?? 0;
+            $bId = (int) $b->ultima_mensagem_id ?? 0;
+            return $bId - $aId;
+        })->values();
 
         $this->outrosUtilizadores = User::where('id', '!=', $utilizador->id)
             ->orderBy('nome')
             ->get();
+
+        $this->dispatchConversasIds();
     }
+
+    private function conversaLastActivityTs($conversa): int
+    {
+        return $conversa->ultimaMensagem?->created_at?->timestamp ?? $conversa->updated_at?->timestamp ?? 0;
+    }
+
+    protected function carregarConversaSistema(bool $forcarEnsure = false): void
+    {
+        $user = Auth::user();
+
+        if (! $user || ($user->is_system ?? false)) {
+            $this->conversaSistema = null;
+            return;
+        }
+
+        // Se já temos a conversa em memória e não forçamos ensure, apenas refrescamos os relacionamentos
+        if (! $forcarEnsure && $this->conversaSistema) {
+            $this->conversaSistema = Conversa::with(['ultimaMensagem.emissor', 'participantes', 'grupo'])
+                ->find($this->conversaSistema->id);
+            return;
+        }
+
+        $conversa = app(SystemConversationService::class)->ensureForUser($user);
+
+        if (! $conversa) {
+            $this->conversaSistema = null;
+            return;
+        }
+
+        $this->conversaSistema = Conversa::with(['ultimaMensagem.emissor', 'participantes', 'grupo'])
+            ->find($conversa->id);
+    }
+
+    protected function removerSistemaDaLista(Collection $conversas): Collection
+    {
+        if (! $this->conversaSistema) {
+            return $conversas;
+        }
+
+        $sid = (int) $this->conversaSistema->id;
+
+        return $conversas
+            ->reject(fn ($c) => (int) $c->id === $sid)
+            ->values();
+    }
+
+    protected function carregarMensagensAtivas(?int $anchorMessageId = null): void
+    {
+        if (! $this->conversaAtiva) {
+            $this->mensagens = new Collection();
+            return;
+        }
+
+        $limit = max(20, (int) $this->mensagensPorDefeito);
+        $conversaId = (int) $this->conversaAtiva->id;
+
+        // Se houver âncora (pesquisa), tentamos garantir que a mensagem alvo está dentro do lote carregado
+        if ($anchorMessageId) {
+            $anchor = Mensagem::where('conversa_id', $conversaId)->find($anchorMessageId);
+
+            if ($anchor) {
+                $antes = (int) floor(($limit - 1) / 2);
+                $depois = $limit - 1 - $antes;
+
+                $idsAntes = Mensagem::where('conversa_id', $conversaId)
+                    ->where('created_at', '<=', $anchor->created_at)
+                    ->orderByDesc('created_at')
+                    ->limit($antes + 1) // inclui a âncora
+                    ->pluck('id');
+
+                $idsDepois = Mensagem::where('conversa_id', $conversaId)
+                    ->where('created_at', '>', $anchor->created_at)
+                    ->orderBy('created_at')
+                    ->limit($depois)
+                    ->pluck('id');
+
+                $ids = $idsAntes->merge($idsDepois)->unique()->values();
+
+                $this->mensagens = Mensagem::with(['emissor', 'anexos'])
+                    ->whereIn('id', $ids)
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                return;
+            }
+        }
+
+        // Default: últimas N mensagens (render em ordem ascendente)
+        $this->mensagens = $this->conversaAtiva->mensagens()
+            ->with(['emissor', 'anexos'])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get()
+            ->reverse()
+            ->values();
+    }
+
 
     public function hydrate(): void
     {
         if (Auth::check()) {
             $this->recarregarBarraLateral();
+            $this->carregarConversaSistema(false);
         }
 
         if ($this->conversaAtiva) {
             $this->conversaAtiva = Conversa::with(['participantes', 'grupo', 'ultimaMensagem.emissor'])->find($this->conversaAtiva->id);
             if ($this->conversaAtiva) {
-                $this->mensagens = $this->conversaAtiva->mensagens()
-                    ->with(['emissor', 'anexos'])
-                    ->orderBy('created_at', 'asc')
-                    ->get();
+                $this->carregarMensagensAtivas($this->highlightMessageId);
             } else {
                 $this->conversaAtiva = null;
                 $this->mensagens = new Collection();
@@ -186,10 +309,7 @@ class ChatInterface extends Component
         $this->conversaAtiva = $conversa;
 
         if ($this->conversaAtiva) {
-            $this->mensagens = $this->conversaAtiva->mensagens()
-                ->with(['emissor', 'anexos'])
-                ->orderBy('created_at', 'asc')
-                ->get();
+            $this->carregarMensagensAtivas($scrollToMessageId);
         } else {
             $this->mensagens = new Collection();
         }
@@ -203,8 +323,13 @@ class ChatInterface extends Component
 
         $this->highlightMessageId = $scrollToMessageId;
 
+        // Realtime: subscrição do canal no browser
+        $this->dispatch('conversa-selecionada', conversaId: $conversaId);
+
         if ($scrollToMessageId) {
             $this->dispatch('scroll-to-message', messageId: $scrollToMessageId);
+        } else {
+            $this->dispatch('scroll-chat-para-fundo');
         }
 
         session()->put('conversa_ativa_id', $conversaId);
@@ -322,13 +447,18 @@ class ChatInterface extends Component
             return;
         }
 
-        DB::transaction(function () use ($utilizador, $temTexto) {
+        $novaMsg = null;
+        DB::transaction(function () use ($utilizador, $temTexto, &$novaMsg) {
             $novaMsg = $this->conversaAtiva->mensagens()->create([
                 'emissor_id' => $utilizador->id,
                 'conteudo'   => $temTexto ? $this->novaMensagem : null,
             ]);
 
-            app(\App\Services\AutoReplyService::class)->handle($novaMsg);
+            try {
+                app(\App\Services\AutoReplyService::class)->handle($novaMsg);
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             if (!empty($this->uploads)) {
                 foreach ($this->uploads as $file) {
@@ -351,14 +481,17 @@ class ChatInterface extends Component
                     ]);
                 }
             }
-
-            $this->conversaAtiva->update(['ultima_mensagem_id' => $novaMsg->id]);
         });
 
-        $this->mensagens = $this->conversaAtiva->mensagens()
-            ->with(['emissor', 'anexos'])
-            ->orderBy('created_at', 'asc')
-            ->get();
+        // Push manual para $mensagens para evitar recarregar tudo e perda de state
+        if ($novaMsg) {
+            $novaMsg->load(['emissor', 'anexos']);
+            $this->mensagens->push($novaMsg);
+            $limite = max(20, (int) $this->mensagensPorDefeito);
+            if ($this->mensagens->count() > $limite) {
+                $this->mensagens = $this->mensagens->slice(-$limite)->values();
+            }
+        }
 
         $this->recarregarBarraLateral();
 
@@ -382,6 +515,7 @@ class ChatInterface extends Component
     public function recarregarBarraLateral(): void
     {
         $utilizador = Auth::user();
+        $this->carregarConversaSistema(false);
         $termo = trim($this->searchConversa);
 
         $dmsQuery = $utilizador->conversasParticipadas()
@@ -437,18 +571,6 @@ class ChatInterface extends Component
                   ->orWhereHas('mensagens', fn($q2) => $q2->whereNotNull('conteudo')->where('conteudo', 'like', "%{$termo}%"));
             });
         }
-
-        if ($this->filtroConversas === 'grupos') {
-            $dmsQuery->where('tipo', 'grupo');
-        }
-        if ($this->filtroConversas === 'favoritos') {
-            $dmsQuery->whereHas('pins', fn($q) => $q->where('user_id', auth()->id()));
-        }
-
-        $dms = $dmsQuery
-            ->orderByDesc('is_pinned')
-            ->orderBy('updated_at', 'desc')
-            ->get();
 
         $gruposQuery = Conversa::where('tipo', 'grupo')
             ->whereHas('grupo.membrosAtivos', function ($q) use ($utilizador) {
@@ -507,21 +629,40 @@ class ChatInterface extends Component
         }
 
         if ($this->filtroConversas === 'grupos') {
-            $gruposQuery->where('tipo', 'grupo');
-        }
-        if ($this->filtroConversas === 'favoritos') {
+            $dms = collect();
+            $grupos = $gruposQuery->get();
+        } elseif ($this->filtroConversas === 'favoritos') {
+            $dmsQuery->whereHas('pins', fn($q) => $q->where('user_id', auth()->id()));
             $gruposQuery->whereHas('pins', fn($q) => $q->where('user_id', auth()->id()));
+            $dms = $dmsQuery->get();
+            $grupos = $gruposQuery->get();
+        } else {
+            $dms = $dmsQuery->get();
+            $grupos = $gruposQuery->get();
         }
 
-        $grupos = $gruposQuery
-            ->orderByDesc('is_pinned')
-            ->orderBy('updated_at', 'desc')
-            ->get();
+        $merged = $dms->merge($grupos)->unique('id');
 
-        $this->conversas = $dms->merge($grupos)->unique('id')
-            ->sortByDesc(function ($conversa) {
-                return [$conversa->is_pinned, $conversa->updated_at];
-            });
+        $merged = $this->removerSistemaDaLista($merged);
+
+        $this->conversas = $merged->sort(function ($a, $b) {
+            $aPinned = $a->is_pinned ?? 0;
+            $bPinned = $b->is_pinned ?? 0;
+            if ($aPinned !== $bPinned) {
+                return $bPinned - $aPinned;
+            }
+            $aTs = $this->conversaLastActivityTs($a);
+            $bTs = $this->conversaLastActivityTs($b);
+            if ($aTs !== $bTs) {
+                return $bTs - $aTs;
+            }
+            // Tie-break por ultima_mensagem_id desc
+            $aId = (int) $a->ultima_mensagem_id ?? 0;
+            $bId = (int) $b->ultima_mensagem_id ?? 0;
+            return $bId - $aId;
+        })->values();
+
+        $this->dispatchConversasIds();
     }
 
     public function setFiltroConversas(string $filtro): void
@@ -575,25 +716,58 @@ class ChatInterface extends Component
 
     public function onMensagemRecebidaRealtime(array $payload): void
     {
-        if (
-            $payload['emissor_id'] === auth()->id() ||
-            ($payload['emissor']['is_system'] ?? false)
-        ) {
+        // ignora apenas sistema (mantém UI limpa)
+        if (($payload['emissor']['is_system'] ?? false)) {
             return;
         }
 
-        if ($this->mensagens->contains('id', $payload['id'])) {
+        if ($this->mensagens->contains('id', $payload['id'] ?? null)) {
             return;
         }
 
-        $mensagem = Mensagem::with(['emissor', 'anexos'])->find($payload['id']);
-
+        $mensagem = Mensagem::with(['emissor', 'anexos'])->find($payload['id'] ?? null);
         if (! $mensagem) {
             return;
         }
 
         $this->mensagens->push($mensagem);
+
+        $limite = max(20, (int) $this->mensagensPorDefeito);
+        if ($this->mensagens->count() > $limite) {
+            $this->mensagens = $this->mensagens->slice(-$limite)->values();
+        }
+
+        // **Crítico**: refresca sidebar para ordenar e atualizar snippet/hora
+        $this->recarregarBarraLateral();
+
         $this->dispatch('scroll-chat-para-fundo');
+    }
+
+    public function onMensagemRecebidaRealtimeSidebar(array $payload): void
+    {
+        if (($payload['emissor']['is_system'] ?? false)) {
+            return;
+        }
+
+        $conversaId = (int)($payload['conversa_id'] ?? 0);
+
+        // Se o broadcast não vier com conversa_id, faz fallback ao DB
+        if ($conversaId <= 0 && isset($payload['id'])) {
+            $conversaId = (int) Mensagem::whereKey($payload['id'])->value('conversa_id');
+        }
+
+        if ($conversaId <= 0) {
+            return;
+        }
+
+        // Se for a conversa ativa, reaproveita o handler que injeta na UI do chat
+        if ($this->conversaAtiva && (int)$this->conversaAtiva->id === $conversaId) {
+            $this->onMensagemRecebidaRealtime($payload);
+            return;
+        }
+
+        // Caso contrário, basta refrescar sidebar (ordenar e atualizar snippet/hora)
+        $this->recarregarBarraLateral();
     }
 
     public function toggleMembrosGrupo(): void
@@ -1102,5 +1276,13 @@ class ChatInterface extends Component
         }
 
         return $this->userPodeModerarGrupo();
+    }
+
+    private function dispatchConversasIds(): void
+    {
+        // Limita para evitar subscrições excessivas
+        $ids = $this->conversas->pluck('id')->take(60)->values()->all();
+
+        $this->dispatch('conversas-ids', ids: $ids, activeId: $this->conversaAtiva?->id);
     }
 }

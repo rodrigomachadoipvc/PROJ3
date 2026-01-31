@@ -32,5 +32,7 @@ class AppServiceProvider extends ServiceProvider
                 fromName: $fromName
             );
         });
+
+        \App\Models\Mensagem::observe(\App\Observers\MensagemObserver::class);
     }
 }
