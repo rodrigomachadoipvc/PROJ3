@@ -1,4 +1,9 @@
 <div
+    x-data="{
+        showMemberDeleteModal: false,
+        memberIdToRemove: null,
+        memberNameToRemove: ''
+    }"
     class="fixed top-16 left-0 right-0 bottom-0 z-10 flex flex-col overflow-hidden comm-bg text-[var(--c-t1)]"
     style="background-color: var(--c-bg-0);"
 >
@@ -598,11 +603,24 @@
                                     <span class="text-xs bg-white/10 text-[var(--c-a2)] px-2 py-0.5 rounded border border-white/10">Moderador</span>
                                     <span class="text-xs text-white/50 ml-1">🔒</span>
                                 @else
-                                    <select wire:change.stop="definirRoleMembro({{ $membro->id }}, $event.target.value)" class="text-xs bg-white/5 border-white/10 text-white/80 rounded-lg focus:ring-[var(--c-a2)]">
+                                    <select
+                                        wire:change.stop="definirRoleMembro({{ $membro->id }}, $event.target.value)"
+                                        class="comm-select text-xs bg-white/5 border border-white/10 text-white/90 rounded-lg px-2 py-1 focus:ring-[var(--c-a2)] focus:border-[var(--c-a2)]"
+                                    >
                                         <option value="member" {{ $role === 'member' ? 'selected' : '' }}>Membro</option>
                                         <option value="moderator" {{ $role === 'moderator' ? 'selected' : '' }}>Moderador</option>
                                     </select>
-                                    <button type="button" wire:click.stop.prevent="removerMembroDoGrupo({{ $membro->id }})" class="text-red-500 hover:text-red-400 text-xs">
+
+                                    {{-- CONFIRMAÇÃO (modal) --}}
+                                    <button
+                                        type="button"
+                                        class="text-red-500 hover:text-red-400 text-xs"
+                                        @click.stop.prevent="
+                                            memberIdToRemove = {{ $membro->id }};
+                                            memberNameToRemove = @js($membro->nome);
+                                            showMemberDeleteModal = true;
+                                        "
+                                    >
                                         Remover
                                     </button>
                                 @endif
@@ -614,34 +632,124 @@
         @endif
     </div>
 
-    {{-- MODAIS iguais aos teus (mantive) --}}
+    {{-- MODAL: confirmação de remover membro --}}
+    <div
+        x-show="showMemberDeleteModal"
+        x-transition.opacity
+        x-cloak
+        class="fixed inset-0 z-[999] flex items-center justify-center p-4"
+        aria-modal="true"
+        role="dialog"
+        @keydown.escape.window="showMemberDeleteModal = false"
+    >
+        <div
+            class="absolute inset-0"
+            style="background: rgba(0,0,0,.65); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);"
+            @click="showMemberDeleteModal = false"
+        ></div>
+
+        <div
+            class="relative w-full max-w-lg rounded-2xl border overflow-hidden"
+            style="
+                border-color: rgba(255,255,255,.12);
+                background: radial-gradient(900px 520px at 70% 10%, rgba(248,113,113,.10), transparent 60%),
+                            radial-gradient(900px 520px at 25% 40%, rgba(96,165,250,.08), transparent 55%),
+                            rgba(10,15,24,.92);
+                box-shadow: 0 30px 80px rgba(0,0,0,.55);
+            "
+        >
+            <div class="px-6 py-5 border-b" style="border-color: rgba(255,255,255,.10);">
+                <h3 class="text-xl font-semibold text-white leading-tight">
+                    Remover membro
+                </h3>
+                <p class="mt-1 text-sm text-white/65 leading-snug">
+                    Tem a certeza que deseja remover <span class="font-semibold text-white/85" x-text="memberNameToRemove"></span> do grupo?
+                    Esta ação não pode ser revertida.
+                </p>
+            </div>
+
+            <div class="px-6 py-4 border-t flex justify-end gap-3" style="border-color: rgba(255,255,255,.10);">
+                <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white/85 border transition hover:text-white hover:brightness-110"
+                    style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
+                    @click="showMemberDeleteModal = false"
+                >
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white border transition hover:brightness-110"
+                    style="
+                        border-color: rgba(255,255,255,.12);
+                        background: linear-gradient(180deg, rgba(248,113,113,.22), rgba(248,113,113,.10));
+                    "
+                    @click="
+                        if (memberIdToRemove) { $wire.removerMembroDoGrupo(memberIdToRemove); }
+                        showMemberDeleteModal = false;
+                        memberIdToRemove = null;
+                        memberNameToRemove = '';
+                    "
+                >
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- MODAIS --}}
     @if ($mostrarEditarGrupo)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div class="comm-card rounded-2xl border border-white/10 shadow-2xl p-6">
-                <h2 class="text-lg font-semibold mb-4 text-white">Editar Grupo</h2>
-
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-white/80">Nome do Grupo</label>
-                    <input type="text" wire:model.defer="novoNomeGrupo"
-                           class="mt-1 block w-full rounded-xl bg-white/5 border border-white/10 text-white/90 placeholder-white/40 focus:border-[var(--c-a2)] focus:ring-[var(--c-a2)]">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
+            <div class="comm-card w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <!-- Header estilo "Eliminar" -->
+                <div class="px-6 py-5 flex items-start gap-4 bg-white/[0.03] border-b border-white/10">
+                    <div class="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M11 4h2m-1 0v16m8-8H4" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="text-lg font-semibold text-white">Editar Grupo</h2>
+                        <p class="text-sm text-white/60 mt-1">
+                            Atualize o nome e a imagem do grupo.
+                        </p>
+                    </div>
                 </div>
 
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-white/80">Foto do Grupo</label>
-                    <input type="file" wire:model="fotoGrupoUpload" class="mt-1 block w-full">
+                <!-- Corpo -->
+                <div class="px-6 py-5 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-white/80">Nome do Grupo</label>
+                        <input type="text" wire:model.defer="novoNomeGrupo"
+                               class="mt-2 block w-full rounded-xl bg-white/5 border border-white/10 text-white/90 placeholder-white/40 focus:border-[var(--c-a2)] focus:ring-[var(--c-a2)]">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-white/80">Foto do Grupo</label>
+                        <input
+                            type="file"
+                            wire:model="fotoGrupoUpload"
+                            class="mt-2 block w-full rounded-xl bg-white/5 border border-white/10 text-sm text-white/80
+                                   file:mr-4 file:rounded-lg file:border-0 file:bg-white/10 file:px-4 file:py-2
+                                   file:text-sm file:font-semibold file:text-white hover:file:bg-white/15"
+                        >
+                    </div>
                 </div>
 
-                <div class="flex justify-end space-x-2">
-                    <button type="button"
-                            wire:click="guardarGrupo"
-                            class="bg-gradient-to-r from-[var(--c-a1)] to-[var(--c-a2)] hover:brightness-110 text-white px-4 py-2 rounded-md">
-                        Guardar
-                    </button>
-
+                <!-- Footer -->
+                <div class="px-6 py-4 flex justify-end gap-3 bg-white/[0.02] border-t border-white/10">
                     <button type="button"
                             wire:click="cancelarEditarGrupo"
                             class="bg-white/5 text-white/80 hover:bg-white/10 px-4 py-2 rounded-md">
                         Cancelar
+                    </button>
+
+                    <button type="button"
+                            wire:click="guardarGrupo"
+                            class="bg-gradient-to-r from-[var(--c-a1)] to-[var(--c-a2)] hover:brightness-110 text-white px-4 py-2 rounded-md">
+                        Guardar
                     </button>
                 </div>
             </div>
@@ -649,20 +757,201 @@
     @endif
 
     @if ($mostrarAdicionarMembro)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div class="comm-card rounded-2xl border border-white/10 shadow-2xl p-6">
-                <h2 class="text-lg font-semibold mb-4 text-white">Adicionar Membro</h2>
-                <select wire:model="selectedUserToAdd" class="w-full rounded-xl bg-white/5 border border-white/10 text-white/90 placeholder-white/40 focus:border-[var(--c-a2)] focus:ring-[var(--c-a2)] mb-4">
-                    <option value="">Selecione um utilizador</option>
-                    @foreach ($usersDisponiveisAdicionar as $u)
-                        <option value="{{ $u->id }}">{{ $u->nome }} ({{ $u->email }})</option>
-                    @endforeach
-                </select>
-                <div class="flex justify-end space-x-2">
-                    <button type="button" wire:click.stop.prevent="adicionarMembroSelecionado" class="bg-gradient-to-r from-[var(--c-a1)] to-[var(--c-a2)] hover:brightness-110 text-white px-4 py-2 rounded-md">
-                        Adicionar
-                    </button>
-                    <button type="button" wire:click.stop.prevent="fecharAdicionarMembro" class="bg-white/5 text-white/80 hover:bg-white/10 px-4 py-2 rounded-md">
+        @php
+            $usersPayload = collect($usersDisponiveisAdicionar ?? [])->map(fn ($u) => [
+                'id'    => $u->id,
+                'nome'  => $u->nome,
+                'email' => $u->email,
+            ])->values();
+        @endphp
+
+        <div
+            x-cloak
+            class="fixed inset-0 z-[999] flex items-center justify-center p-4"
+            aria-modal="true"
+            role="dialog"
+        >
+            {{-- Overlay --}}
+            <div
+                class="absolute inset-0"
+                style="background: rgba(0,0,0,.65); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);"
+                wire:click.stop.prevent="fecharAdicionarMembro"
+            ></div>
+
+            {{-- Modal (estilo admin) --}}
+            <div
+                class="relative w-full max-w-3xl rounded-2xl border overflow-hidden"
+                style="
+                    border-color: rgba(255,255,255,.12);
+                    background: radial-gradient(1200px 600px at 70% 10%, rgba(45,212,191,.10), transparent 60%),
+                                radial-gradient(900px 500px at 25% 40%, rgba(96,165,250,.10), transparent 55%),
+                                rgba(10,15,24,.92);
+                    box-shadow: 0 30px 80px rgba(0,0,0,.55);
+                "
+                x-data="{
+                    users: @js($usersPayload),
+                    query: '',
+                    open: false,
+                    selectedId: null,
+                    selectedLabel: '',
+                    maxResults: 50,
+
+                    filtered() {
+                        const q = (this.query || '').trim().toLowerCase();
+                        if (q.length < 1) return [];
+                        return this.users
+                            .filter(u => {
+                                const nome = (u.nome || '').toLowerCase();
+                                const email = (u.email || '').toLowerCase();
+                                const id = String(u.id || '');
+                                return nome.includes(q) || email.includes(q) || id.includes(q);
+                            })
+                            .slice(0, this.maxResults);
+                    },
+
+                    selectUser(u) {
+                        this.selectedId = u.id;
+                        this.selectedLabel = `${u.nome} (${u.email})`;
+                        this.query = this.selectedLabel;
+                        this.open = false;
+                        if (this.$wire) this.$wire.set('selectedUserToAdd', u.id);
+                    },
+
+                    clearSelection() {
+                        this.selectedId = null;
+                        this.selectedLabel = '';
+                        this.query = '';
+                        this.open = false;
+                        if (this.$wire) this.$wire.set('selectedUserToAdd', '');
+                    }
+                }"
+                @keydown.escape.window="open = false"
+            >
+                {{-- Header --}}
+                <div class="px-6 py-5 border-b" style="border-color: rgba(255,255,255,.10);">
+                    <h3 class="text-xl font-semibold text-white leading-tight">
+                        Adicionar membro
+                    </h3>
+                    <p class="mt-1 text-sm text-white/65 leading-snug">
+                        Pesquise por nome, email ou ID e selecione o utilizador.
+                    </p>
+                </div>
+
+                {{-- Body --}}
+                <div class="px-6 py-6 space-y-6">
+                    <div class="rounded-2xl border p-5" style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.02);">
+                        <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
+                            {{-- Pesquisa + limpar + resultados --}}
+                            <div class="relative" @click.outside="open = false">
+                                <div class="flex items-center gap-2">
+                                    <div class="relative flex-1">
+                                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3" style="color: rgba(255,255,255,.55);">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 6.3 6.3a7.5 7.5 0 0 0 10.35 10.35Z" />
+                                            </svg>
+                                        </span>
+
+                                        <input
+                                            type="text"
+                                            class="w-full rounded-xl border px-10 py-2.5 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-sky-400/35"
+                                            style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04);"
+                                            placeholder="Procurar utilizador por nome, email ou ID…"
+                                            x-model="query"
+                                            @focus="open = true"
+                                            @input="open = true"
+                                            @keydown.escape.prevent="open = false"
+                                            @keydown.enter.prevent="
+                                                const r = filtered();
+                                                if (r.length) selectUser(r[0]);
+                                            "
+                                            autocomplete="off"
+                                        />
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        x-show="(query || '').trim().length"
+                                        x-cloak
+                                        class="h-[42px] inline-flex items-center justify-center rounded-xl px-3 text-xs font-semibold border text-white/80 hover:text-white hover:brightness-110"
+                                        style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
+                                        @click="clearSelection()"
+                                    >
+                                        Limpar
+                                    </button>
+                                </div>
+
+                                <div x-show="selectedId" x-cloak class="mt-2 text-xs text-white/70">
+                                    Selecionado: <span class="font-semibold text-white/85" x-text="selectedLabel"></span>
+                                </div>
+
+                                <div
+                                    x-show="open && (query || '').trim().length >= 1"
+                                    x-cloak
+                                    class="mt-3 rounded-2xl border overflow-hidden"
+                                    style="border-color: rgba(255,255,255,.12); background: rgba(10,15,24,.92);"
+                                >
+                                    <div
+                                        class="divide-y"
+                                        style="divide-color: rgba(255,255,255,.08); max-height: 240px; overflow-y: auto;"
+                                    >
+                                        <div
+                                            x-show="filtered().length === 0"
+                                            class="px-4 py-3 text-sm text-white/60"
+                                        >
+                                            Sem resultados para a pesquisa atual.
+                                        </div>
+
+                                        <template x-for="u in filtered()" :key="u.id">
+                                            <button
+                                                type="button"
+                                                class="w-full text-left px-4 py-3 transition"
+                                                style="background: rgba(255,255,255,.02);"
+                                                @click="selectUser(u)"
+                                                @mouseover="($el.style.background='rgba(255,255,255,.06)')"
+                                                @mouseout="($el.style.background='rgba(255,255,255,.02)')"
+                                            >
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <div class="min-w-0">
+                                                        <div class="text-sm font-semibold text-white/90 truncate" x-text="u.nome"></div>
+                                                        <div class="text-xs text-white/60 truncate" x-text="u.email"></div>
+                                                    </div>
+
+                                                    <span class="shrink-0 inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold border"
+                                                          style="border-color: rgba(45,212,191,.25); background: rgba(45,212,191,.10); color: rgba(153,246,228,.95);">
+                                                        Selecionar
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                wire:click.stop.prevent="adicionarMembroSelecionado"
+                                class="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white border transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                                style="
+                                    border-color: rgba(255,255,255,.12);
+                                    background: linear-gradient(180deg, rgba(96,165,250,.20), rgba(45,212,191,.12));
+                                "
+                                x-bind:disabled="!selectedId"
+                                title="Seleciona um utilizador para adicionar"
+                            >
+                                Adicionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Footer --}}
+                <div class="px-6 py-4 border-t flex justify-end gap-3" style="border-color: rgba(255,255,255,.10);">
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white/85 border transition hover:text-white hover:brightness-110"
+                        style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
+                        wire:click.stop.prevent="fecharAdicionarMembro"
+                    >
                         Cancelar
                     </button>
                 </div>
@@ -737,6 +1026,29 @@
             setTimeout(doScroll, 60);
         }
 
+        function bindAddMemberSearch() {
+            const input = document.getElementById('add-member-search');
+            const list  = document.getElementById('add-member-list');
+            if (!input || !list) return;
+
+            if (input.dataset.bound === '1') return;
+            input.dataset.bound = '1';
+
+            const applyFilter = () => {
+                const q = (input.value || '').trim().toLowerCase();
+                const items = list.querySelectorAll('[data-add-member-item="1"]');
+
+                items.forEach((el) => {
+                    const hay = (el.dataset.search || '');
+                    const show = (q === '') ? true : hay.includes(q);
+                    el.style.display = show ? '' : 'none';
+                });
+            };
+
+            input.addEventListener('input', applyFilter);
+            applyFilter();
+        }
+
         document.addEventListener('livewire:init', () => {
             Livewire.on('conversas-ids', ({ ids, activeId: aId }) => {
                 syncSubscriptions(ids || [], aId || null);
@@ -749,25 +1061,25 @@
             if (Livewire.hook) {
                 Livewire.hook('message.processed', () => {
                     const container = document.getElementById('chat-scroll');
-                    if (!container) return;
+                    if (container) {
+                        const highlightId = (container.dataset.highlightId || '').trim();
+                        if (highlightId === '') {
+                            const convId = (container.dataset.conversaId || '').trim();
+                            const lastMsgId = (container.dataset.lastMsgId || '').trim();
 
-                    const highlightId = (container.dataset.highlightId || '').trim();
-                    if (highlightId !== '') return;
-
-                    const convId = (container.dataset.conversaId || '').trim();
-                    const lastMsgId = (container.dataset.lastMsgId || '').trim();
-
-                    if (convId !== '' && convId !== lastRenderedConversaId) {
-                        lastRenderedConversaId = convId;
-                        lastRenderedLastMsgId = lastMsgId;
-                        scrollChatToBottom('auto');
-                        return;
+                            if (convId !== '' && convId !== lastRenderedConversaId) {
+                                lastRenderedConversaId = convId;
+                                lastRenderedLastMsgId = lastMsgId;
+                                scrollChatToBottom('auto');
+                            } else if (lastMsgId !== '' && lastMsgId !== lastRenderedLastMsgId) {
+                                lastRenderedLastMsgId = lastMsgId;
+                                scrollChatToBottom('auto');
+                            }
+                        }
                     }
 
-                    if (lastMsgId !== '' && lastMsgId !== lastRenderedLastMsgId) {
-                        lastRenderedLastMsgId = lastMsgId;
-                        scrollChatToBottom('auto');
-                    }
+                    // garante binding da pesquisa do modal "Adicionar Membro"
+                    bindAddMemberSearch();
                 });
             }
 
@@ -796,6 +1108,9 @@
                 const upload = document.getElementById('chat-upload-input');
                 if (upload) upload.value = '';
             });
+
+            // binding inicial caso o modal já esteja aberto
+            bindAddMemberSearch();
         });
     })();
     </script>

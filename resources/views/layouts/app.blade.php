@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full" style="background-color: var(--c-bg-0);">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full" style="background-color: var(--c-bg-0); color-scheme: dark;">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -26,6 +26,24 @@
         <link rel="shortcut icon" href="{{ $icoHref }}">
         <link rel="apple-touch-icon" href="{{ $logoHref }}">
         <meta name="theme-color" content="#0B1220">
+
+        {{-- FIX: força o browser a renderizar controlos nativos em modo escuro --}}
+        <meta name="color-scheme" content="dark">
+        <style>
+            :root { color-scheme: dark; }
+
+            /* Alpine: evita flash antes do x-show */
+            [x-cloak] { display: none !important; }
+
+            /* Select nativo em dark (principalmente Windows/Chrome) */
+            select.comm-select { color-scheme: dark; }
+
+            /* Dropdown (options) — evita ficar branco */
+            select.comm-select option {
+                background-color: var(--c-bg-0);
+                color: rgba(255,255,255,.92);
+            }
+        </style>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
