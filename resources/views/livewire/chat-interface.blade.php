@@ -1,9 +1,4 @@
 <div
-    x-data="{
-        showMemberDeleteModal: false,
-        memberIdToRemove: null,
-        memberNameToRemove: ''
-    }"
     class="fixed top-16 left-0 right-0 bottom-0 z-10 flex flex-col overflow-hidden comm-bg text-[var(--c-t1)]"
     style="background-color: var(--c-bg-0);"
 >
@@ -301,7 +296,6 @@
 
                         <div id="msg-{{ $mensagem->id }}"
                              class="{{ $highlightMessageId === $mensagem->id ? 'ring-2 ring-yellow-400/60 rounded-2xl' : '' }}">
-                            {{-- MANTÉM O TEU BLOCO INTEIRO DE MENSAGENS COMO ESTÁ --}}
                             @if ($isNewGroup)
                                 @if ($isOwn)
                                     <div class="flex items-start justify-end mt-4 space-x-3">
@@ -320,8 +314,8 @@
                                                             @if ($isImage)
                                                                 <a href="{{ route('anexos.ver', $anexo) }}" target="_blank" class="inline-block">
                                                                     <img src="{{ route('anexos.ver', $anexo) }}"
-                                                                        alt="{{ $anexo->nome_original }}"
-                                                                        class="max-w-xs rounded-lg border border-white/10 shadow-sm hover:opacity-90">
+                                                                         alt="{{ $anexo->nome_original }}"
+                                                                         class="max-w-xs rounded-lg border border-white/10 shadow-sm hover:opacity-90">
                                                                 </a>
                                                             @else
                                                                 <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-md px-3 py-2">
@@ -380,8 +374,8 @@
                                                             @if ($isImage)
                                                                 <a href="{{ route('anexos.ver', $anexo) }}" target="_blank" class="inline-block">
                                                                     <img src="{{ route('anexos.ver', $anexo) }}"
-                                                                        alt="{{ $anexo->nome_original }}"
-                                                                        class="max-w-xs rounded-lg border border-white/10 shadow-sm hover:opacity-90">
+                                                                         alt="{{ $anexo->nome_original }}"
+                                                                         class="max-w-xs rounded-lg border border-white/10 shadow-sm hover:opacity-90">
                                                                 </a>
                                                             @else
                                                                 <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-md px-3 py-2">
@@ -423,8 +417,8 @@
                                                             @if ($isImage)
                                                                 <a href="{{ route('anexos.ver', $anexo) }}" target="_blank" class="inline-block">
                                                                     <img src="{{ route('anexos.ver', $anexo) }}"
-                                                                        alt="{{ $anexo->nome_original }}"
-                                                                        class="max-w-xs rounded-lg border border-white/10 shadow-sm hover:opacity-90">
+                                                                         alt="{{ $anexo->nome_original }}"
+                                                                         class="max-w-xs rounded-lg border border-white/10 shadow-sm hover:opacity-90">
                                                                 </a>
                                                             @else
                                                                 <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-md px-3 py-2">
@@ -464,8 +458,8 @@
                                                             @if ($isImage)
                                                                 <a href="{{ route('anexos.ver', $anexo) }}" target="_blank" class="inline-block">
                                                                     <img src="{{ route('anexos.ver', $anexo) }}"
-                                                                        alt="{{ $anexo->nome_original }}"
-                                                                        class="max-w-xs rounded-lg border border-white/10 shadow-sm hover:opacity-90">
+                                                                         alt="{{ $anexo->nome_original }}"
+                                                                         class="max-w-xs rounded-lg border border-white/10 shadow-sm hover:opacity-90">
                                                                 </a>
                                                             @else
                                                                 <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-md px-3 py-2">
@@ -510,7 +504,7 @@
                         <label class="cursor-pointer flex items-center justify-center w-9 h-9 rounded-md bg-white/5 border border-white/10 hover:bg-white/10">
                             <svg class="w-5 h-5 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L6.343 10.172a6 6 0 108.485 8.485L20 13"/>
+                                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L6.343 10.172a6 6 0 108.485 8.485L20 13"/>
                             </svg>
                             <input type="file" class="hidden" multiple wire:model="uploads" id="chat-upload-input">
                         </label>
@@ -565,7 +559,6 @@
 
         @if ($mostrarMembrosGrupo && $membrosGrupo)
             <aside class="w-64 comm-card border-l border-white/10 p-4 overflow-y-auto shrink-0">
-                {{-- igual ao teu --}}
                 <h3 class="text-sm font-semibold text-white/90 mb-3">
                     Membros do Grupo ({{ $membrosGrupo->count() }})
                 </h3>
@@ -585,6 +578,7 @@
                                 </div>
                             @endif
                             <span class="text-sm text-white flex-1">{{ $membro->nome }}</span>
+
                             @php
                                 $role = $membro->pivot->role ?? 'member';
                                 $badge = $role === 'moderator' ? 'Moderador' : 'Membro';
@@ -611,15 +605,11 @@
                                         <option value="moderator" {{ $role === 'moderator' ? 'selected' : '' }}>Moderador</option>
                                     </select>
 
-                                    {{-- CONFIRMAÇÃO (modal) --}}
+                                    {{-- REMOVER: modal bonito (estilo admin), sem pop-up do browser --}}
                                     <button
                                         type="button"
                                         class="text-red-500 hover:text-red-400 text-xs"
-                                        @click.stop.prevent="
-                                            memberIdToRemove = {{ $membro->id }};
-                                            memberNameToRemove = @js($membro->nome);
-                                            showMemberDeleteModal = true;
-                                        "
+                                        onclick="window.commOpenRemoveMemberModal(event, @js($membro->nome), {{ $membro->id }});"
                                     >
                                         Remover
                                     </button>
@@ -632,77 +622,10 @@
         @endif
     </div>
 
-    {{-- MODAL: confirmação de remover membro --}}
-    <div
-        x-show="showMemberDeleteModal"
-        x-transition.opacity
-        x-cloak
-        class="fixed inset-0 z-[999] flex items-center justify-center p-4"
-        aria-modal="true"
-        role="dialog"
-        @keydown.escape.window="showMemberDeleteModal = false"
-    >
-        <div
-            class="absolute inset-0"
-            style="background: rgba(0,0,0,.65); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);"
-            @click="showMemberDeleteModal = false"
-        ></div>
-
-        <div
-            class="relative w-full max-w-lg rounded-2xl border overflow-hidden"
-            style="
-                border-color: rgba(255,255,255,.12);
-                background: radial-gradient(900px 520px at 70% 10%, rgba(248,113,113,.10), transparent 60%),
-                            radial-gradient(900px 520px at 25% 40%, rgba(96,165,250,.08), transparent 55%),
-                            rgba(10,15,24,.92);
-                box-shadow: 0 30px 80px rgba(0,0,0,.55);
-            "
-        >
-            <div class="px-6 py-5 border-b" style="border-color: rgba(255,255,255,.10);">
-                <h3 class="text-xl font-semibold text-white leading-tight">
-                    Remover membro
-                </h3>
-                <p class="mt-1 text-sm text-white/65 leading-snug">
-                    Tem a certeza que deseja remover <span class="font-semibold text-white/85" x-text="memberNameToRemove"></span> do grupo?
-                    Esta ação não pode ser revertida.
-                </p>
-            </div>
-
-            <div class="px-6 py-4 border-t flex justify-end gap-3" style="border-color: rgba(255,255,255,.10);">
-                <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white/85 border transition hover:text-white hover:brightness-110"
-                    style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
-                    @click="showMemberDeleteModal = false"
-                >
-                    Cancelar
-                </button>
-
-                <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white border transition hover:brightness-110"
-                    style="
-                        border-color: rgba(255,255,255,.12);
-                        background: linear-gradient(180deg, rgba(248,113,113,.22), rgba(248,113,113,.10));
-                    "
-                    @click="
-                        if (memberIdToRemove) { $wire.removerMembroDoGrupo(memberIdToRemove); }
-                        showMemberDeleteModal = false;
-                        memberIdToRemove = null;
-                        memberNameToRemove = '';
-                    "
-                >
-                    Confirmar
-                </button>
-            </div>
-        </div>
-    </div>
-
     {{-- MODAIS --}}
     @if ($mostrarEditarGrupo)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
             <div class="comm-card w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
-                <!-- Header estilo "Eliminar" -->
                 <div class="px-6 py-5 flex items-start gap-4 bg-white/[0.03] border-b border-white/10">
                     <div class="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                         <svg class="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -718,7 +641,6 @@
                     </div>
                 </div>
 
-                <!-- Corpo -->
                 <div class="px-6 py-5 space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-white/80">Nome do Grupo</label>
@@ -738,7 +660,6 @@
                     </div>
                 </div>
 
-                <!-- Footer -->
                 <div class="px-6 py-4 flex justify-end gap-3 bg-white/[0.02] border-t border-white/10">
                     <button type="button"
                             wire:click="cancelarEditarGrupo"
@@ -756,29 +677,19 @@
         </div>
     @endif
 
+    {{-- ADICIONAR MEMBRO: apenas barra de pesquisa + dropdown + botão Adicionar (visual intocado) --}}
     @if ($mostrarAdicionarMembro)
-        @php
-            $usersPayload = collect($usersDisponiveisAdicionar ?? [])->map(fn ($u) => [
-                'id'    => $u->id,
-                'nome'  => $u->nome,
-                'email' => $u->email,
-            ])->values();
-        @endphp
-
         <div
-            x-cloak
             class="fixed inset-0 z-[999] flex items-center justify-center p-4"
             aria-modal="true"
             role="dialog"
         >
-            {{-- Overlay --}}
             <div
                 class="absolute inset-0"
                 style="background: rgba(0,0,0,.65); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);"
                 wire:click.stop.prevent="fecharAdicionarMembro"
             ></div>
 
-            {{-- Modal (estilo admin) --}}
             <div
                 class="relative w-full max-w-3xl rounded-2xl border overflow-hidden"
                 style="
@@ -788,46 +699,7 @@
                                 rgba(10,15,24,.92);
                     box-shadow: 0 30px 80px rgba(0,0,0,.55);
                 "
-                x-data="{
-                    users: @js($usersPayload),
-                    query: '',
-                    open: false,
-                    selectedId: null,
-                    selectedLabel: '',
-                    maxResults: 50,
-
-                    filtered() {
-                        const q = (this.query || '').trim().toLowerCase();
-                        if (q.length < 1) return [];
-                        return this.users
-                            .filter(u => {
-                                const nome = (u.nome || '').toLowerCase();
-                                const email = (u.email || '').toLowerCase();
-                                const id = String(u.id || '');
-                                return nome.includes(q) || email.includes(q) || id.includes(q);
-                            })
-                            .slice(0, this.maxResults);
-                    },
-
-                    selectUser(u) {
-                        this.selectedId = u.id;
-                        this.selectedLabel = `${u.nome} (${u.email})`;
-                        this.query = this.selectedLabel;
-                        this.open = false;
-                        if (this.$wire) this.$wire.set('selectedUserToAdd', u.id);
-                    },
-
-                    clearSelection() {
-                        this.selectedId = null;
-                        this.selectedLabel = '';
-                        this.query = '';
-                        this.open = false;
-                        if (this.$wire) this.$wire.set('selectedUserToAdd', '');
-                    }
-                }"
-                @keydown.escape.window="open = false"
             >
-                {{-- Header --}}
                 <div class="px-6 py-5 border-b" style="border-color: rgba(255,255,255,.10);">
                     <h3 class="text-xl font-semibold text-white leading-tight">
                         Adicionar membro
@@ -837,12 +709,10 @@
                     </p>
                 </div>
 
-                {{-- Body --}}
-                <div class="px-6 py-6 space-y-6">
+                <div class="px-6 py-6 space-y-4">
                     <div class="rounded-2xl border p-5" style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.02);">
                         <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
-                            {{-- Pesquisa + limpar + resultados --}}
-                            <div class="relative" @click.outside="open = false">
+                            <div id="add-member-autocomplete" class="relative">
                                 <div class="flex items-center gap-2">
                                     <div class="relative flex-1">
                                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3" style="color: rgba(255,255,255,.55);">
@@ -852,68 +722,81 @@
                                         </span>
 
                                         <input
+                                            id="add-member-search"
                                             type="text"
                                             class="w-full rounded-xl border px-10 py-2.5 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-sky-400/35"
                                             style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04);"
-                                            placeholder="Procurar utilizador por nome, email ou ID…"
-                                            x-model="query"
-                                            @focus="open = true"
-                                            @input="open = true"
-                                            @keydown.escape.prevent="open = false"
-                                            @keydown.enter.prevent="
-                                                const r = filtered();
-                                                if (r.length) selectUser(r[0]);
-                                            "
+                                            placeholder="Procurar utilizador…"
                                             autocomplete="off"
                                         />
                                     </div>
 
                                     <button
                                         type="button"
-                                        x-show="(query || '').trim().length"
-                                        x-cloak
+                                        wire:click="$set('selectedUserToAdd', '')"
                                         class="h-[42px] inline-flex items-center justify-center rounded-xl px-3 text-xs font-semibold border text-white/80 hover:text-white hover:brightness-110"
                                         style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
-                                        @click="clearSelection()"
+                                        onclick="(function(){
+                                            var i=document.getElementById('add-member-search');
+                                            var r=document.getElementById('add-member-results');
+                                            if(i){ i.value=''; i.dispatchEvent(new Event('input', { bubbles:true })); i.focus(); }
+                                            if(r){ r.classList.add('hidden'); }
+                                        })();"
                                     >
                                         Limpar
                                     </button>
                                 </div>
 
-                                <div x-show="selectedId" x-cloak class="mt-2 text-xs text-white/70">
-                                    Selecionado: <span class="font-semibold text-white/85" x-text="selectedLabel"></span>
-                                </div>
+                                @php
+                                    $selId = (string)($selectedUserToAdd ?? '');
+                                    $selUser = null;
+                                    if (!empty($selId) && !empty($usersDisponiveisAdicionar)) {
+                                        $selUser = collect($usersDisponiveisAdicionar)->firstWhere('id', (int)$selId);
+                                    }
+                                @endphp
 
+                                @if ($selUser)
+                                    <div class="mt-2 text-xs text-white/70">
+                                        Selecionado:
+                                        <span class="font-semibold text-white/85">
+                                            {{ $selUser->nome }} ({{ $selUser->email }})
+                                        </span>
+                                    </div>
+                                @endif
+
+                                {{-- Dropdown de resultados (oculto até escrever) --}}
                                 <div
-                                    x-show="open && (query || '').trim().length >= 1"
-                                    x-cloak
-                                    class="mt-3 rounded-2xl border overflow-hidden"
+                                    id="add-member-results"
+                                    class="hidden mt-3 rounded-2xl border overflow-hidden"
                                     style="border-color: rgba(255,255,255,.12); background: rgba(10,15,24,.92);"
                                 >
-                                    <div
-                                        class="divide-y"
-                                        style="divide-color: rgba(255,255,255,.08); max-height: 240px; overflow-y: auto;"
-                                    >
-                                        <div
-                                            x-show="filtered().length === 0"
-                                            class="px-4 py-3 text-sm text-white/60"
-                                        >
+                                    <div class="divide-y" style="divide-color: rgba(255,255,255,.08); max-height: 240px; overflow-y: auto;">
+                                        <div id="add-member-empty" class="hidden px-4 py-3 text-sm text-white/60">
                                             Sem resultados para a pesquisa atual.
                                         </div>
 
-                                        <template x-for="u in filtered()" :key="u.id">
+                                        @forelse ($usersDisponiveisAdicionar as $u)
+                                            @php
+                                                $nome = $u->nome ?? '—';
+                                                $email = $u->email ?? '';
+                                                $label = trim($nome . ' (' . $email . ')');
+                                                $searchText = mb_strtolower(trim($nome . ' ' . $email . ' ' . (string)$u->id));
+                                                $selected = (string)($selectedUserToAdd ?? '') === (string)$u->id;
+                                            @endphp
+
                                             <button
                                                 type="button"
+                                                data-add-member-item="1"
+                                                data-search="{{ e($searchText) }}"
+                                                data-label="{{ e($label) }}"
+                                                wire:click="$set('selectedUserToAdd', {{ $u->id }})"
                                                 class="w-full text-left px-4 py-3 transition"
-                                                style="background: rgba(255,255,255,.02);"
-                                                @click="selectUser(u)"
-                                                @mouseover="($el.style.background='rgba(255,255,255,.06)')"
-                                                @mouseout="($el.style.background='rgba(255,255,255,.02)')"
+                                                style="background: {{ $selected ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.02)' }};"
                                             >
                                                 <div class="flex items-center justify-between gap-3">
                                                     <div class="min-w-0">
-                                                        <div class="text-sm font-semibold text-white/90 truncate" x-text="u.nome"></div>
-                                                        <div class="text-xs text-white/60 truncate" x-text="u.email"></div>
+                                                        <div class="text-sm font-semibold text-white/90 truncate">{{ $nome }}</div>
+                                                        <div class="text-xs text-white/60 truncate">{{ $email }}</div>
                                                     </div>
 
                                                     <span class="shrink-0 inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold border"
@@ -922,7 +805,11 @@
                                                     </span>
                                                 </div>
                                             </button>
-                                        </template>
+                                        @empty
+                                            <div class="px-4 py-3 text-sm text-white/60">
+                                                Sem utilizadores disponíveis para adicionar.
+                                            </div>
+                                        @endforelse
                                     </div>
                                 </div>
                             </div>
@@ -935,7 +822,7 @@
                                     border-color: rgba(255,255,255,.12);
                                     background: linear-gradient(180deg, rgba(96,165,250,.20), rgba(45,212,191,.12));
                                 "
-                                x-bind:disabled="!selectedId"
+                                {{ empty($selectedUserToAdd) ? 'disabled' : '' }}
                                 title="Seleciona um utilizador para adicionar"
                             >
                                 Adicionar
@@ -944,7 +831,6 @@
                     </div>
                 </div>
 
-                {{-- Footer --}}
                 <div class="px-6 py-4 border-t flex justify-end gap-3" style="border-color: rgba(255,255,255,.10);">
                     <button
                         type="button"
@@ -958,6 +844,69 @@
             </div>
         </div>
     @endif
+
+    {{-- MODAL REMOVER MEMBRO (estilo admin, sem Alpine) --}}
+    <div
+        id="comm-remove-member-modal"
+        class="hidden fixed inset-0 z-[999] flex items-center justify-center p-4"
+        aria-modal="true"
+        role="dialog"
+        data-user-id=""
+        data-wire-id=""
+    >
+        <div
+            id="comm-remove-member-overlay"
+            class="absolute inset-0"
+            style="background: rgba(0,0,0,.65); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);"
+        ></div>
+
+        <div
+            class="relative w-full max-w-lg rounded-2xl border overflow-hidden"
+            style="
+                border-color: rgba(255,255,255,.12);
+                background: radial-gradient(1200px 600px at 70% 10%, rgba(248,113,113,.10), transparent 60%),
+                            radial-gradient(900px 500px at 25% 40%, rgba(96,165,250,.10), transparent 55%),
+                            rgba(10,15,24,.92);
+                box-shadow: 0 30px 80px rgba(0,0,0,.55);
+            "
+        >
+            <div class="px-6 py-5 border-b" style="border-color: rgba(255,255,255,.10);">
+                <h3 class="text-xl font-semibold text-white leading-tight">
+                    Remover membro
+                </h3>
+                <p class="mt-1 text-sm text-white/65 leading-snug">
+                    Tem a certeza que pretende remover <span id="comm-remove-member-name" class="font-semibold text-white/85"></span> do grupo?
+                </p>
+            </div>
+
+            <div class="px-6 py-5">
+                <div class="rounded-xl border px-4 py-3 text-sm"
+                     style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.02); color: rgba(255,255,255,.75);">
+                    Esta ação remove o utilizador do grupo. Pode voltar a ser adicionado mais tarde.
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t flex justify-end gap-3" style="border-color: rgba(255,255,255,.10);">
+                <button
+                    type="button"
+                    id="comm-remove-member-cancel"
+                    class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white/85 border transition hover:text-white hover:brightness-110"
+                    style="border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03);"
+                >
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    id="comm-remove-member-confirm"
+                    class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white border transition hover:brightness-110"
+                    style="border-color: rgba(255,255,255,.12); background: rgba(248,113,113,.18);"
+                >
+                    Remover
+                </button>
+            </div>
+        </div>
+    </div>
 
     @once
     <script>
@@ -1026,29 +975,223 @@
             setTimeout(doScroll, 60);
         }
 
-        function bindAddMemberSearch() {
-            const input = document.getElementById('add-member-search');
-            const list  = document.getElementById('add-member-list');
-            if (!input || !list) return;
-
-            if (input.dataset.bound === '1') return;
-            input.dataset.bound = '1';
-
-            const applyFilter = () => {
-                const q = (input.value || '').trim().toLowerCase();
-                const items = list.querySelectorAll('[data-add-member-item="1"]');
-
-                items.forEach((el) => {
-                    const hay = (el.dataset.search || '');
-                    const show = (q === '') ? true : hay.includes(q);
-                    el.style.display = show ? '' : 'none';
-                });
-            };
-
-            input.addEventListener('input', applyFilter);
-            applyFilter();
+        // -----------------------------
+        // ADICIONAR MEMBRO: pesquisa robusta (delegação)
+        // -----------------------------
+        function norm(s) {
+            return (s || '')
+                .toString()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
         }
 
+        function getAddMemberDom() {
+            const wrap  = document.getElementById('add-member-autocomplete');
+            const input = document.getElementById('add-member-search');
+            const box   = document.getElementById('add-member-results');
+            const empty = document.getElementById('add-member-empty');
+            if (!wrap || !input || !box) return null;
+            return { wrap, input, box, empty };
+        }
+
+        function openAddBox(dom) { dom.box.classList.remove('hidden'); }
+        function closeAddBox(dom) { dom.box.classList.add('hidden'); }
+
+        function addMemberItems(dom) {
+            return Array.from(dom.box.querySelectorAll('[data-add-member-item="1"]'));
+        }
+
+        function applyAddMemberFilter() {
+            const dom = getAddMemberDom();
+            if (!dom) return;
+
+            const qRaw = (dom.input.value || '').trim();
+            const q = norm(qRaw);
+            const items = addMemberItems(dom);
+
+            if (q.length < 1) {
+                closeAddBox(dom);
+                if (dom.empty) dom.empty.classList.add('hidden');
+                items.forEach(btn => btn.style.display = '');
+                return;
+            }
+
+            let visible = 0;
+
+            items.forEach((btn) => {
+                const hay = norm(btn.dataset.search || '');
+                const show = hay.includes(q);
+                btn.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            if (dom.empty) {
+                if (visible === 0) dom.empty.classList.remove('hidden');
+                else dom.empty.classList.add('hidden');
+            }
+
+            openAddBox(dom);
+        }
+
+        // -----------------------------
+        // REMOVER MEMBRO: modal bonito (sem confirm)
+        // -----------------------------
+        function getRemoveModalDom() {
+            const modal = document.getElementById('comm-remove-member-modal');
+            const overlay = document.getElementById('comm-remove-member-overlay');
+            const cancel = document.getElementById('comm-remove-member-cancel');
+            const confirm = document.getElementById('comm-remove-member-confirm');
+            const nameEl = document.getElementById('comm-remove-member-name');
+            if (!modal || !overlay || !cancel || !confirm || !nameEl) return null;
+            return { modal, overlay, cancel, confirm, nameEl };
+        }
+
+        window.commOpenRemoveMemberModal = function (e, name, userId) {
+            if (e) {
+                e.preventDefault();
+                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            }
+
+            const dom = getRemoveModalDom();
+            if (!dom) return;
+
+            // apanha o wire:id do componente Livewire mais próximo (fiável)
+            let wireId = '';
+            try {
+                const root = e && e.target ? e.target.closest('[wire\\:id]') : null;
+                wireId = root ? (root.getAttribute('wire:id') || '') : '';
+                if (!wireId) {
+                    const any = document.querySelector('[wire\\:id]');
+                    wireId = any ? (any.getAttribute('wire:id') || '') : '';
+                }
+            } catch (_) {}
+
+            dom.modal.dataset.userId = String(userId || '');
+            dom.modal.dataset.wireId = String(wireId || '');
+            dom.nameEl.textContent = name || '';
+
+            dom.modal.classList.remove('hidden');
+        };
+
+        window.commCloseRemoveMemberModal = function () {
+            const dom = getRemoveModalDom();
+            if (!dom) return;
+            dom.modal.classList.add('hidden');
+            dom.modal.dataset.userId = '';
+            dom.modal.dataset.wireId = '';
+            dom.nameEl.textContent = '';
+        };
+
+        function confirmRemoveMember() {
+            const dom = getRemoveModalDom();
+            if (!dom) return;
+
+            const userId = parseInt(dom.modal.dataset.userId || '0', 10);
+            const wireId = (dom.modal.dataset.wireId || '').trim();
+
+            if (!userId) {
+                window.commCloseRemoveMemberModal();
+                return;
+            }
+
+            // chama método Livewire
+            try {
+                if (window.Livewire && typeof window.Livewire.find === 'function' && wireId) {
+                    const comp = window.Livewire.find(wireId);
+                    if (comp && typeof comp.call === 'function') {
+                        comp.call('removerMembroDoGrupo', userId);
+                    } else if (comp && typeof comp.$call === 'function') {
+                        comp.$call('removerMembroDoGrupo', userId);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            window.commCloseRemoveMemberModal();
+        }
+
+        // -----------------------------
+        // Eventos globais (delegação)
+        // -----------------------------
+        document.addEventListener('focusin', (e) => {
+            if (e.target && e.target.id === 'add-member-search') {
+                applyAddMemberFilter();
+            }
+        }, true);
+
+        document.addEventListener('input', (e) => {
+            if (e.target && e.target.id === 'add-member-search') {
+                applyAddMemberFilter();
+            }
+        }, true);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.target && e.target.id === 'add-member-search') {
+                const dom = getAddMemberDom();
+                if (!dom) return;
+
+                if (e.key === 'Escape') {
+                    closeAddBox(dom);
+                    return;
+                }
+
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const items = addMemberItems(dom).filter(btn => btn.style.display !== 'none');
+                    if (items.length) items[0].click(); // mantém wire:click e fecha via click handler abaixo
+                }
+            }
+
+            // fechar modal remover com ESC
+            if (e.key === 'Escape') {
+                const rm = document.getElementById('comm-remove-member-modal');
+                if (rm && !rm.classList.contains('hidden')) {
+                    window.commCloseRemoveMemberModal();
+                }
+            }
+        }, true);
+
+        document.addEventListener('click', (e) => {
+            // clique num item do dropdown do adicionar -> mete label no input e fecha
+            const item = e.target ? e.target.closest('[data-add-member-item="1"]') : null;
+            if (item) {
+                const dom = getAddMemberDom();
+                if (!dom) return;
+                const label = item.dataset.label || '';
+                if (label) dom.input.value = label;
+                closeAddBox(dom);
+                return;
+            }
+
+            // clique fora -> fecha dropdown
+            const dom = getAddMemberDom();
+            if (dom && e.target && !dom.wrap.contains(e.target)) {
+                closeAddBox(dom);
+            }
+        }, true);
+
+        // Remover modal: overlay/cancel/confirm
+        document.addEventListener('click', (e) => {
+            const dom = getRemoveModalDom();
+            if (!dom) return;
+
+            if (e.target === dom.overlay || e.target === dom.cancel) {
+                window.commCloseRemoveMemberModal();
+                return;
+            }
+
+            if (e.target === dom.confirm) {
+                confirmRemoveMember();
+                return;
+            }
+        }, true);
+
+        // -----------------------------
+        // Livewire init
+        // -----------------------------
         document.addEventListener('livewire:init', () => {
             Livewire.on('conversas-ids', ({ ids, activeId: aId }) => {
                 syncSubscriptions(ids || [], aId || null);
@@ -1057,31 +1200,6 @@
             Livewire.on('conversa-selecionada', (data) => {
                 syncSubscriptions(lastIds, data.conversaId);
             });
-
-            if (Livewire.hook) {
-                Livewire.hook('message.processed', () => {
-                    const container = document.getElementById('chat-scroll');
-                    if (container) {
-                        const highlightId = (container.dataset.highlightId || '').trim();
-                        if (highlightId === '') {
-                            const convId = (container.dataset.conversaId || '').trim();
-                            const lastMsgId = (container.dataset.lastMsgId || '').trim();
-
-                            if (convId !== '' && convId !== lastRenderedConversaId) {
-                                lastRenderedConversaId = convId;
-                                lastRenderedLastMsgId = lastMsgId;
-                                scrollChatToBottom('auto');
-                            } else if (lastMsgId !== '' && lastMsgId !== lastRenderedLastMsgId) {
-                                lastRenderedLastMsgId = lastMsgId;
-                                scrollChatToBottom('auto');
-                            }
-                        }
-                    }
-
-                    // garante binding da pesquisa do modal "Adicionar Membro"
-                    bindAddMemberSearch();
-                });
-            }
 
             Livewire.on('scroll-chat-para-fundo', () => scrollChatToBottom('auto'));
 
@@ -1109,8 +1227,29 @@
                 if (upload) upload.value = '';
             });
 
-            // binding inicial caso o modal já esteja aberto
-            bindAddMemberSearch();
+            // scroll inteligente (mantém o teu comportamento)
+            const hook = (fnName) => (window.Livewire && typeof Livewire.hook === 'function');
+            if (hook()) {
+                Livewire.hook('message.processed', () => {
+                    const container = document.getElementById('chat-scroll');
+                    if (container) {
+                        const highlightId = (container.dataset.highlightId || '').trim();
+                        if (highlightId === '') {
+                            const convId = (container.dataset.conversaId || '').trim();
+                            const lastMsgId = (container.dataset.lastMsgId || '').trim();
+
+                            if (convId !== '' && convId !== lastRenderedConversaId) {
+                                lastRenderedConversaId = convId;
+                                lastRenderedLastMsgId = lastMsgId;
+                                scrollChatToBottom('auto');
+                            } else if (lastMsgId !== '' && lastMsgId !== lastRenderedLastMsgId) {
+                                lastRenderedLastMsgId = lastMsgId;
+                                scrollChatToBottom('auto');
+                            }
+                        }
+                    }
+                });
+            }
         });
     })();
     </script>
