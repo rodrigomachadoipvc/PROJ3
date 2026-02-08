@@ -151,10 +151,10 @@
             <!-- Filtros -->
             <div class="flex gap-2 mb-4 overflow-x-auto pb-1 shrink-0">
                 <button type="button"
-                    wire:click="setFiltroConversas('todas')"
+                    wire:click="setFiltroConversas('recentes')"
                     class="px-4 py-1.5 rounded-full text-sm font-medium border whitespace-nowrap
-                    {{ $filtroConversas === 'todas' ? 'bg-white/10 text-white border-white/10' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10' }}">
-                    Todos
+                    {{ $filtroConversas === 'recentes' ? 'bg-white/10 text-white border-white/10' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10' }}">
+                    Recentes
                 </button>
 
                 <button type="button"
@@ -605,7 +605,6 @@
                                         <option value="moderator" {{ $role === 'moderator' ? 'selected' : '' }}>Moderador</option>
                                     </select>
 
-                                    {{-- REMOVER: modal bonito (estilo admin), sem pop-up do browser --}}
                                     <button
                                         type="button"
                                         class="text-red-500 hover:text-red-400 text-xs"
@@ -623,6 +622,7 @@
     </div>
 
     {{-- MODAIS --}}
+
     @if ($mostrarEditarGrupo)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
             <div class="comm-card w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
@@ -677,7 +677,7 @@
         </div>
     @endif
 
-    {{-- ADICIONAR MEMBRO: apenas barra de pesquisa + dropdown + botão Adicionar (visual intocado) --}}
+    {{-- ADICIONAR MEMBRO --}}
     @if ($mostrarAdicionarMembro)
         <div
             class="fixed inset-0 z-[999] flex items-center justify-center p-4"
@@ -764,7 +764,6 @@
                                     </div>
                                 @endif
 
-                                {{-- Dropdown de resultados (oculto até escrever) --}}
                                 <div
                                     id="add-member-results"
                                     class="hidden mt-3 rounded-2xl border overflow-hidden"
@@ -785,6 +784,7 @@
                                             @endphp
 
                                             <button
+                                                wire:key="add-member-item-{{ $u->id }}"
                                                 type="button"
                                                 data-add-member-item="1"
                                                 data-search="{{ e($searchText) }}"
@@ -815,6 +815,7 @@
                             </div>
 
                             <button
+                                id="add-member-add-btn"
                                 type="button"
                                 wire:click.stop.prevent="adicionarMembroSelecionado"
                                 class="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white border transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -845,7 +846,7 @@
         </div>
     @endif
 
-    {{-- MODAL REMOVER MEMBRO (estilo admin, sem Alpine) --}}
+    {{-- MODAL REMOVER MEMBRO --}}
     <div
         id="comm-remove-member-modal"
         class="hidden fixed inset-0 z-[999] flex items-center justify-center p-4"
@@ -1035,6 +1036,101 @@
         }
 
         // -----------------------------
+        // FIX DEFINITIVO: adicionar vários membros seguidos
+        // -----------------------------
+        let pendingAddMemberReset = false;
+        let pendingAddMemberWireId = '';
+
+        function captureWireIdFrom(el) {
+            let wireId = '';
+            try {
+                const root = el ? el.closest('[wire\\:id]') : null;
+                wireId = root ? (root.getAttribute('wire:id') || '') : '';
+                if (!wireId) {
+                    const any = document.querySelector('[wire\\:id]');
+                    wireId = any ? (any.getAttribute('wire:id') || '') : '';
+                }
+            } catch (_) {}
+            return wireId;
+        }
+
+        function afterDomPaint(fn) {
+            requestAnimationFrame(() => requestAnimationFrame(fn));
+        }
+
+        function trySetSelectedEmptyOnComp(comp) {
+            if (!comp) return false;
+            try {
+                if (typeof comp.set === 'function') { comp.set('selectedUserToAdd', ''); return true; }
+                if (typeof comp.$set === 'function') { comp.$set('selectedUserToAdd', ''); return true; }
+                if (comp.$wire && typeof comp.$wire.set === 'function') { comp.$wire.set('selectedUserToAdd', ''); return true; }
+                if (comp.$wire && typeof comp.$wire.$set === 'function') { comp.$wire.$set('selectedUserToAdd', ''); return true; }
+            } catch (_) {}
+            return false;
+        }
+
+        function lwClearSelectedEverywhere() {
+            if (!window.Livewire) return;
+
+            try {
+                if (typeof Livewire.all === 'function') {
+                    Livewire.all().forEach((c) => { trySetSelectedEmptyOnComp(c); });
+                    return;
+                }
+            } catch (_) {}
+
+            // fallback defensivo (APIs internas podem variar)
+            try {
+                const store = Livewire?.components?.componentsById || Livewire?.components?.components;
+                if (store && typeof store === 'object') {
+                    Object.values(store).forEach((c) => { trySetSelectedEmptyOnComp(c); });
+                }
+            } catch (_) {}
+        }
+
+        function lwSetSelectedEmpty(wireId) {
+            const id = (wireId || '').trim();
+
+            // tenta por wire:id
+            if (id && window.Livewire && typeof Livewire.find === 'function') {
+                try {
+                    const comp = Livewire.find(id);
+                    if (trySetSelectedEmptyOnComp(comp)) return;
+                } catch (_) {}
+            }
+
+            // fallback: limpa em qualquer componente (evita ficar preso)
+            lwClearSelectedEverywhere();
+        }
+
+        function resetAddMemberUiAndState() {
+            const wireId = (pendingAddMemberWireId || '').trim();
+            pendingAddMemberWireId = '';
+
+            // 1) limpar estado Livewire (para desativar botão até nova seleção)
+            lwSetSelectedEmpty(wireId);
+
+            // 2) limpar UI (depois do patch do DOM)
+            afterDomPaint(() => {
+                const dom = getAddMemberDom();
+                if (!dom) return;
+
+                dom.input.value = '';
+                dom.input.dispatchEvent(new Event('input', { bubbles: true }));
+                closeAddBox(dom);
+                setTimeout(() => dom.input && dom.input.focus(), 0);
+            });
+        }
+
+        // marca reset quando clicas "Adicionar"
+        document.addEventListener('click', (e) => {
+            const btn = e.target ? e.target.closest('#add-member-add-btn') : null;
+            if (!btn) return;
+            pendingAddMemberReset = true;
+            pendingAddMemberWireId = captureWireIdFrom(btn);
+        }, true);
+
+        // -----------------------------
         // REMOVER MEMBRO: modal bonito (sem confirm)
         // -----------------------------
         function getRemoveModalDom() {
@@ -1057,7 +1153,6 @@
             const dom = getRemoveModalDom();
             if (!dom) return;
 
-            // apanha o wire:id do componente Livewire mais próximo (fiável)
             let wireId = '';
             try {
                 const root = e && e.target ? e.target.closest('[wire\\:id]') : null;
@@ -1096,7 +1191,6 @@
                 return;
             }
 
-            // chama método Livewire
             try {
                 if (window.Livewire && typeof window.Livewire.find === 'function' && wireId) {
                     const comp = window.Livewire.find(wireId);
@@ -1104,6 +1198,8 @@
                         comp.call('removerMembroDoGrupo', userId);
                     } else if (comp && typeof comp.$call === 'function') {
                         comp.$call('removerMembroDoGrupo', userId);
+                    } else if (comp && comp.$wire && typeof comp.$wire.call === 'function') {
+                        comp.$wire.call('removerMembroDoGrupo', userId);
                     }
                 }
             } catch (err) {
@@ -1141,11 +1237,10 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     const items = addMemberItems(dom).filter(btn => btn.style.display !== 'none');
-                    if (items.length) items[0].click(); // mantém wire:click e fecha via click handler abaixo
+                    if (items.length) items[0].click();
                 }
             }
 
-            // fechar modal remover com ESC
             if (e.key === 'Escape') {
                 const rm = document.getElementById('comm-remove-member-modal');
                 if (rm && !rm.classList.contains('hidden')) {
@@ -1155,7 +1250,6 @@
         }, true);
 
         document.addEventListener('click', (e) => {
-            // clique num item do dropdown do adicionar -> mete label no input e fecha
             const item = e.target ? e.target.closest('[data-add-member-item="1"]') : null;
             if (item) {
                 const dom = getAddMemberDom();
@@ -1166,7 +1260,6 @@
                 return;
             }
 
-            // clique fora -> fecha dropdown
             const dom = getAddMemberDom();
             if (dom && e.target && !dom.wrap.contains(e.target)) {
                 closeAddBox(dom);
@@ -1227,28 +1320,58 @@
                 if (upload) upload.value = '';
             });
 
-            // scroll inteligente (mantém o teu comportamento)
-            const hook = (fnName) => (window.Livewire && typeof Livewire.hook === 'function');
-            if (hook()) {
-                Livewire.hook('message.processed', () => {
-                    const container = document.getElementById('chat-scroll');
-                    if (container) {
-                        const highlightId = (container.dataset.highlightId || '').trim();
-                        if (highlightId === '') {
-                            const convId = (container.dataset.conversaId || '').trim();
-                            const lastMsgId = (container.dataset.lastMsgId || '').trim();
+            // ✅ Livewire 3: hook "commit" (reset robusto pós request)
+            if (window.Livewire && typeof Livewire.hook === 'function') {
+                Livewire.hook('commit', ({ succeed, fail }) => {
+                    if (!pendingAddMemberReset) return;
 
-                            if (convId !== '' && convId !== lastRenderedConversaId) {
-                                lastRenderedConversaId = convId;
-                                lastRenderedLastMsgId = lastMsgId;
-                                scrollChatToBottom('auto');
-                            } else if (lastMsgId !== '' && lastMsgId !== lastRenderedLastMsgId) {
-                                lastRenderedLastMsgId = lastMsgId;
-                                scrollChatToBottom('auto');
+                    succeed(() => {
+                        if (!pendingAddMemberReset) return;
+                        pendingAddMemberReset = false;
+                        resetAddMemberUiAndState();
+                    });
+
+                    fail(() => {
+                        pendingAddMemberReset = false;
+                        pendingAddMemberWireId = '';
+                    });
+                });
+
+                // Fallback Livewire 2 (caso exista)
+                try {
+                    Livewire.hook('message.processed', () => {
+                        if (pendingAddMemberReset) {
+                            pendingAddMemberReset = false;
+                            resetAddMemberUiAndState();
+                        }
+                    });
+                } catch (_) {}
+            }
+
+            // scroll inteligente (mantém o teu comportamento)
+            const hook = () => (window.Livewire && typeof Livewire.hook === 'function');
+            if (hook()) {
+                try {
+                    Livewire.hook('message.processed', () => {
+                        const container = document.getElementById('chat-scroll');
+                        if (container) {
+                            const highlightId = (container.dataset.highlightId || '').trim();
+                            if (highlightId === '') {
+                                const convId = (container.dataset.conversaId || '').trim();
+                                const lastMsgId = (container.dataset.lastMsgId || '').trim();
+
+                                if (convId !== '' && convId !== lastRenderedConversaId) {
+                                    lastRenderedConversaId = convId;
+                                    lastRenderedLastMsgId = lastMsgId;
+                                    scrollChatToBottom('auto');
+                                } else if (lastMsgId !== '' && lastMsgId !== lastRenderedLastMsgId) {
+                                    lastRenderedLastMsgId = lastMsgId;
+                                    scrollChatToBottom('auto');
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                } catch (_) {}
             }
         });
     })();

@@ -31,7 +31,7 @@ class ChatInterface extends Component
 
     public ?Conversa $conversaSistema = null;
     public int $mensagensPorDefeito = 80;
-    
+
     public bool $mostrarMembrosGrupo = false;
     public ?Collection $membrosGrupo = null;
 
@@ -41,7 +41,7 @@ class ChatInterface extends Component
 
     public string $searchConversa = '';
 
-    public string $filtroConversas = 'todas';
+    public string $filtroConversas = 'recentes';
 
     public ?int $highlightMessageId = null;
 
@@ -64,7 +64,16 @@ class ChatInterface extends Component
 
     public function mount(Request $request): void
     {
-        $this->filtroConversas = session()->get('filtro_conversas', 'todas');
+        // Default: "recentes" (compatível com sessões antigas "todas")
+        $storedFiltro = session()->get('filtro_conversas', 'recentes');
+        if ($storedFiltro === 'todas') {
+            $storedFiltro = 'recentes';
+        }
+
+        $permitidos = ['recentes', 'grupos', 'favoritos'];
+        $this->filtroConversas = in_array($storedFiltro, $permitidos, true) ? $storedFiltro : 'recentes';
+        session()->put('filtro_conversas', $this->filtroConversas);
+
         $this->carregarPropriedadesIniciais();
         $this->utilizadoresFiltrados = new Collection();
         $this->utilizadoresParaAdicionar = new Collection();
@@ -114,12 +123,8 @@ class ChatInterface extends Component
 
         $merged = $this->removerSistemaDaLista($merged);
 
+        // Ordenação SEM prioridade de favoritos/pins: sempre por atividade mais recente
         $this->conversas = $merged->sort(function ($a, $b) {
-            $aPinned = $a->is_pinned ?? 0;
-            $bPinned = $b->is_pinned ?? 0;
-            if ($aPinned !== $bPinned) {
-                return $bPinned - $aPinned;
-            }
             $aTs = $this->conversaLastActivityTs($a);
             $bTs = $this->conversaLastActivityTs($b);
             if ($aTs !== $bTs) {
@@ -233,7 +238,6 @@ class ChatInterface extends Component
             ->reverse()
             ->values();
     }
-
 
     public function hydrate(): void
     {
@@ -637,6 +641,7 @@ class ChatInterface extends Component
             $dms = $dmsQuery->get();
             $grupos = $gruposQuery->get();
         } else {
+            // "recentes" (default): tudo
             $dms = $dmsQuery->get();
             $grupos = $gruposQuery->get();
         }
@@ -645,12 +650,8 @@ class ChatInterface extends Component
 
         $merged = $this->removerSistemaDaLista($merged);
 
+        // Ordenação SEM prioridade de favoritos/pins: sempre por atividade mais recente
         $this->conversas = $merged->sort(function ($a, $b) {
-            $aPinned = $a->is_pinned ?? 0;
-            $bPinned = $b->is_pinned ?? 0;
-            if ($aPinned !== $bPinned) {
-                return $bPinned - $aPinned;
-            }
             $aTs = $this->conversaLastActivityTs($a);
             $bTs = $this->conversaLastActivityTs($b);
             if ($aTs !== $bTs) {
@@ -667,8 +668,14 @@ class ChatInterface extends Component
 
     public function setFiltroConversas(string $filtro): void
     {
-        $permitidos = ['todas', 'grupos', 'favoritos'];
-        $this->filtroConversas = in_array($filtro, $permitidos, true) ? $filtro : 'todas';
+        // Compatibilidade: "todas" passa a "recentes"
+        if ($filtro === 'todas') {
+            $filtro = 'recentes';
+        }
+
+        $permitidos = ['recentes', 'grupos', 'favoritos'];
+        $this->filtroConversas = in_array($filtro, $permitidos, true) ? $filtro : 'recentes';
+
         session()->put('filtro_conversas', $this->filtroConversas);
         $this->recarregarBarraLateral();
     }
