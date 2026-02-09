@@ -232,6 +232,9 @@ class ChatInterface extends Component
         // Default: últimas N mensagens (render em ordem ascendente)
         $this->mensagens = $this->conversaAtiva->mensagens()
             ->with(['emissor', 'anexos'])
+            // Nota: a relação Conversa::mensagens() já tem orderBy('created_at','asc').
+            // Aqui queremos as ÚLTIMAS N mensagens, por isso limpamos a ordenação da relação.
+            ->reorder()
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get()

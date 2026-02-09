@@ -973,7 +973,39 @@
             };
 
             requestAnimationFrame(doScroll);
-            setTimeout(doScroll, 60);
+            setTimeout(doScroll, 80);
+            setTimeout(doScroll, 240);
+        }
+
+        // WhatsApp: manter mensagens por ordem cronológica (topo->fundo) e garantir
+        // que a vista abre no fundo quando há conversa ativa.
+        function maybeAutoScroll(force = false) {
+            const container = document.getElementById('chat-scroll');
+            if (!container) return;
+
+            const highlightId = (container.dataset.highlightId || '').trim();
+            if (highlightId !== '') return;
+
+            const convId = (container.dataset.conversaId || '').trim();
+            const lastMsgId = (container.dataset.lastMsgId || '').trim();
+
+            if (convId === '') return;
+
+            if (force) {
+                lastRenderedConversaId = convId;
+                lastRenderedLastMsgId = lastMsgId;
+                scrollChatToBottom('auto');
+                return;
+            }
+
+            if (convId !== '' && convId !== lastRenderedConversaId) {
+                lastRenderedConversaId = convId;
+                lastRenderedLastMsgId = lastMsgId;
+                scrollChatToBottom('auto');
+            } else if (lastMsgId !== '' && lastMsgId !== lastRenderedLastMsgId) {
+                lastRenderedLastMsgId = lastMsgId;
+                scrollChatToBottom('auto');
+            }
         }
 
         // -----------------------------
@@ -1320,12 +1352,15 @@
                 if (upload) upload.value = '';
             });
 
-            // ✅ Livewire 3: hook "commit" (reset robusto pós request)
+            // ✅ Livewire 3: hook "commit"
+            // - mantém o reset do modal "Adicionar membro"
+            // - garante que o chat abre sempre no fundo (WhatsApp) e faz auto-scroll apenas quando muda
+            //   a conversa ou entra uma mensagem nova (sem highlight).
             if (window.Livewire && typeof Livewire.hook === 'function') {
                 Livewire.hook('commit', ({ succeed, fail }) => {
-                    if (!pendingAddMemberReset) return;
-
                     succeed(() => {
+                        afterDomPaint(() => maybeAutoScroll(false));
+
                         if (!pendingAddMemberReset) return;
                         pendingAddMemberReset = false;
                         resetAddMemberUiAndState();
@@ -1348,31 +1383,8 @@
                 } catch (_) {}
             }
 
-            // scroll inteligente (mantém o teu comportamento)
-            const hook = () => (window.Livewire && typeof Livewire.hook === 'function');
-            if (hook()) {
-                try {
-                    Livewire.hook('message.processed', () => {
-                        const container = document.getElementById('chat-scroll');
-                        if (container) {
-                            const highlightId = (container.dataset.highlightId || '').trim();
-                            if (highlightId === '') {
-                                const convId = (container.dataset.conversaId || '').trim();
-                                const lastMsgId = (container.dataset.lastMsgId || '').trim();
-
-                                if (convId !== '' && convId !== lastRenderedConversaId) {
-                                    lastRenderedConversaId = convId;
-                                    lastRenderedLastMsgId = lastMsgId;
-                                    scrollChatToBottom('auto');
-                                } else if (lastMsgId !== '' && lastMsgId !== lastRenderedLastMsgId) {
-                                    lastRenderedLastMsgId = lastMsgId;
-                                    scrollChatToBottom('auto');
-                                }
-                            }
-                        }
-                    });
-                } catch (_) {}
-            }
+            // Primeira carga: se já existe conversa ativa (ex.: vindo da dashboard), começa no fundo.
+            afterDomPaint(() => maybeAutoScroll(true));
         });
     })();
     </script>

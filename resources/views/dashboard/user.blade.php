@@ -84,10 +84,15 @@
                              style="max-height: 270px; overflow-y: auto;">
                             @forelse ($recentConversas as $conversa)
                                 @php
-                                    $outro = $conversa->participantes->where('id', '!=', $user->id)->first();
                                     $ultima = $conversa->ultimaMensagem;
 
-                                    $nomeOutro = $outro->nome ?? $outro->name ?? 'Conversa';
+                                    if (($conversa->tipo ?? null) === 'grupo') {
+                                        $nomeOutro = $conversa->grupo?->nome ?? 'Grupo';
+                                    } else {
+                                        $outro = $conversa->participantes->where('id', '!=', $user->id)->first();
+                                        $nomeOutro = $outro->nome ?? $outro->name ?? 'Conversa';
+                                    }
+
                                     $isMine = $ultima && ($ultima->emissor_id == $user->id);
                                     $emissorNome = $isMine ? 'Tu' : ($ultima->emissor?->nome ?? $ultima->emissor?->name ?? '—');
                                     $textoUltima = $ultima ? ($ultima->conteudo ?? 'Anexo') : null;
