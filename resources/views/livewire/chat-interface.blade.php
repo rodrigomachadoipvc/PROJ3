@@ -60,12 +60,55 @@
     <div class="flex flex-1 min-h-0 overflow-hidden w-full min-w-0">
         <!-- Sidebar -->
         <aside class="w-1/4 comm-card border-r border-white/10 p-4 flex flex-col min-h-0 overflow-hidden shrink-0 min-w-[280px]">
-            <!-- Botão Nova conversa -->
-            <div class="flex items-center gap-2 mb-3 shrink-0">
-                <button type="button"
-                        wire:click="abrirNovaConversa"
-                        class="w-full bg-gradient-to-r from-[var(--c-a1)] to-[var(--c-a2)] text-white text-sm font-semibold py-2 rounded-md hover:brightness-110">
-                    + Nova conversa
+
+            {{-- AÇÕES RÁPIDAS (compacto: ganha altura para ver mais conversas) --}}
+            @php
+                $systemIsActive = $conversaAtiva && $conversaSistema && ((int)$conversaAtiva->id === (int)$conversaSistema->id);
+                $ultimaSistema = $conversaSistema?->ultimaMensagem ?? null;
+
+                $systemTooltip = 'Abrir conversa do Sistema';
+                if ($ultimaSistema) {
+                    $who = $ultimaSistema->emissor_id == Auth::id()
+                        ? 'Tu'
+                        : ($ultimaSistema->emissor?->nome ?? 'Sistema');
+
+                    $body = $ultimaSistema->conteudo ?? 'Anexo';
+                    $body = mb_substr($body, 0, 60) . (mb_strlen($body) > 60 ? '…' : '');
+
+                    $when = $ultimaSistema->created_at?->locale('pt_PT')->diffForHumans() ?? '';
+                    $systemTooltip = trim("Sistema — {$who}: {$body} {$when}");
+                }
+            @endphp
+
+            <div class="grid grid-cols-2 gap-2 mb-3 shrink-0">
+                <button
+                    type="button"
+                    wire:click="abrirNovaConversa"
+                    class="h-11 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/90 hover:text-white transition flex items-center justify-center gap-2"
+                    title="Nova conversa"
+                >
+                    <svg class="w-5 h-5 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span class="text-sm font-semibold">Nova</span>
+                </button>
+
+                <button
+                    type="button"
+                    @if($conversaSistema)
+                        wire:click="selecionarConversa({{ $conversaSistema->id }})"
+                    @endif
+                    class="h-11 rounded-xl border border-white/10 transition flex items-center justify-center gap-2
+                        {{ $systemIsActive ? 'bg-white/10 border-white/20 ring-1 ring-[var(--c-a2)] text-white' : 'bg-white/5 hover:bg-white/10 text-white/90 hover:text-white' }}
+                        {{ !$conversaSistema ? 'opacity-50 cursor-not-allowed' : '' }}"
+                    title="{{ e($systemTooltip) }}"
+                    {{ !$conversaSistema ? 'disabled' : '' }}
+                >
+                    <svg class="w-5 h-5 {{ $systemIsActive ? 'text-[var(--c-a2)]' : 'text-white/70' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12h6m-6 4h6M9 8h6M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H7.5L5 6.5V18a2 2 0 002 2z" />
+                    </svg>
+                    <span class="text-sm font-semibold">Sistema</span>
                 </button>
             </div>
 
@@ -114,38 +157,6 @@
                 >
             </div>
 
-            <!-- Sistema (fixo, não afetado por filtros/pesquisa) -->
-            @if ($conversaSistema)
-                @php
-                    $ultimaSistema = $conversaSistema->ultimaMensagem ?? null;
-                @endphp
-
-                <div wire:key="conversa-sistema"
-                     wire:click="selecionarConversa({{ $conversaSistema->id }})"
-                     class="block p-3 rounded-lg cursor-pointer shadow-sm mb-4 border transition shrink-0
-                     {{ $conversaAtiva && $conversaAtiva->id === $conversaSistema->id
-                        ? 'bg-white/10 border-white/20'
-                        : 'bg-white/5 hover:bg-white/10 border-white/10' }}">
-
-                    <div class="flex items-start justify-between gap-2">
-                        <p class="font-semibold text-sm text-white truncate">Sistema</p>
-                    </div>
-
-                    @if ($ultimaSistema)
-                        <p class="text-xs text-white/70 truncate mt-1">
-                            <strong>{{ $ultimaSistema->emissor_id == Auth::id() ? 'Tu' : ($ultimaSistema->emissor?->nome ?? 'Sistema') }}:</strong>
-                            {{ $ultimaSistema->conteudo ?? 'Anexo' }}
-                        </p>
-                        <span class="text-[11px] text-white/50 float-right">
-                            {{ $ultimaSistema->created_at->diffForHumans() }}
-                        </span>
-                        <div class="clear-both"></div>
-                    @else
-                        <p class="text-xs text-white/50 italic mt-1">Sem mensagens ainda.</p>
-                    @endif
-                </div>
-            @endif
-
             <h3 class="text-lg font-semibold mb-2 text-white/90 shrink-0">Conversas</h3>
 
             <!-- Filtros -->
@@ -189,7 +200,8 @@
                         $matchBody = $conversa->matched_message_body ?? null;
                     @endphp
 
-                    <div wire:key="conversa-{{ $conversa->id }}" wire:click="selecionarConversa({{ $conversa->id }}, {{ $conversa->matched_message_id ?? 'null' }})"
+                    <div wire:key="conversa-{{ $conversa->id }}"
+                         wire:click="selecionarConversa({{ $conversa->id }}, {{ $conversa->matched_message_id ?? 'null' }})"
                          class="block p-3 rounded-lg cursor-pointer shadow-sm mb-2 border transition
                          {{ $conversaAtiva && $conversaAtiva->id === $conversa->id
                             ? 'bg-white/10 border-white/20 ring-1 ring-[var(--c-a2)]'
@@ -219,7 +231,7 @@
                             </p>
                             @if ($ultima)
                                 <span class="text-[11px] text-white/45 float-right">
-                                    {{ $ultima->created_at->diffForHumans() }}
+                                    {{ $ultima->created_at->locale('pt_PT')->diffForHumans() }}
                                 </span>
                             @endif
                         @elseif ($termo !== '' && $conversa->matched_group_name)
@@ -229,7 +241,7 @@
                             </p>
                             @if ($ultima)
                                 <span class="text-[11px] text-white/45 float-right">
-                                    {{ $ultima->created_at->diffForHumans() }}
+                                    {{ $ultima->created_at->locale('pt_PT')->diffForHumans() }}
                                 </span>
                             @endif
                         @elseif ($termo !== '' && $conversa->matched_participant_name)
@@ -239,7 +251,7 @@
                             </p>
                             @if ($ultima)
                                 <span class="text-[11px] text-white/45 float-right">
-                                    {{ $ultima->created_at->diffForHumans() }}
+                                    {{ $ultima->created_at->locale('pt_PT')->diffForHumans() }}
                                 </span>
                             @endif
                         @elseif ($ultima)
@@ -248,7 +260,7 @@
                                 {{ $ultima->conteudo ?? 'Anexo' }}
                             </p>
                             <span class="text-[11px] text-white/45 float-right">
-                                {{ $ultima->created_at->diffForHumans() }}
+                                {{ $ultima->created_at->locale('pt_PT')->diffForHumans() }}
                             </span>
                         @else
                             <p class="text-xs text-white/45 italic mt-1">Nenhuma mensagem ainda.</p>
@@ -280,12 +292,31 @@
                             substr($partes[0], 0, 1) . (count($partes) > 1 ? substr(end($partes), 0, 1) : '')
                         );
                     };
+
                     $previousEmissorId = null;
+                    $previousDayKey = null;
                 @endphp
 
                 @if ($conversaAtiva)
                     @forelse ($mensagens as $mensagem)
                         @php
+                            $tz = config('app.timezone') ?: 'UTC';
+                            $dt = $mensagem->created_at?->timezone($tz);
+
+                            $dayKey = $dt?->format('Y-m-d');
+                            $dayChanged = ($previousDayKey !== $dayKey);
+
+                            if ($dayChanged) {
+                                $previousDayKey = $dayKey;
+                                $previousEmissorId = null; // reinicia agrupamento por emissor ao mudar de dia
+                            }
+
+                            $dayLabel = $dt?->isToday()
+                                ? 'Hoje'
+                                : ($dt?->isYesterday()
+                                    ? 'Ontem'
+                                    : $dt?->format('d/m/Y'));
+
                             $sender = $mensagem->emissor;
                             $isOwn = $mensagem->emissor_id == Auth::id();
                             $isNewGroup = $previousEmissorId !== $mensagem->emissor_id;
@@ -293,6 +324,14 @@
                             $senderAvatar = $sender->avatar_url_public;
                             $senderInitials = $initials($sender->nome);
                         @endphp
+
+                        @if ($dayChanged)
+                            <div class="flex justify-center my-4">
+                                <span class="text-xs text-white/60 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
+                                    {{ $dayLabel }}
+                                </span>
+                            </div>
+                        @endif
 
                         <div id="msg-{{ $mensagem->id }}"
                              class="{{ $highlightMessageId === $mensagem->id ? 'ring-2 ring-yellow-400/60 rounded-2xl' : '' }}">
@@ -1111,7 +1150,6 @@
                 }
             } catch (_) {}
 
-            // fallback defensivo (APIs internas podem variar)
             try {
                 const store = Livewire?.components?.componentsById || Livewire?.components?.components;
                 if (store && typeof store === 'object') {
@@ -1123,7 +1161,6 @@
         function lwSetSelectedEmpty(wireId) {
             const id = (wireId || '').trim();
 
-            // tenta por wire:id
             if (id && window.Livewire && typeof Livewire.find === 'function') {
                 try {
                     const comp = Livewire.find(id);
@@ -1131,7 +1168,6 @@
                 } catch (_) {}
             }
 
-            // fallback: limpa em qualquer componente (evita ficar preso)
             lwClearSelectedEverywhere();
         }
 
@@ -1163,7 +1199,7 @@
         }, true);
 
         // -----------------------------
-        // REMOVER MEMBRO: modal bonito (sem confirm)
+        // REMOVER MEMBRO: modal bonito (sem confirm nativo)
         // -----------------------------
         function getRemoveModalDom() {
             const modal = document.getElementById('comm-remove-member-modal');
@@ -1353,9 +1389,8 @@
             });
 
             // ✅ Livewire 3: hook "commit"
-            // - mantém o reset do modal "Adicionar membro"
-            // - garante que o chat abre sempre no fundo (WhatsApp) e faz auto-scroll apenas quando muda
-            //   a conversa ou entra uma mensagem nova (sem highlight).
+            // - mantém reset do modal "Adicionar membro"
+            // - WhatsApp auto-scroll (só quando muda conversa / entra msg nova, e sem highlight)
             if (window.Livewire && typeof Livewire.hook === 'function') {
                 Livewire.hook('commit', ({ succeed, fail }) => {
                     succeed(() => {
@@ -1379,6 +1414,7 @@
                             pendingAddMemberReset = false;
                             resetAddMemberUiAndState();
                         }
+                        afterDomPaint(() => maybeAutoScroll(false));
                     });
                 } catch (_) {}
             }
