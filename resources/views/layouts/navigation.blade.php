@@ -11,6 +11,9 @@
     @php
         $user = Auth::user();
         $isAdmin = $user?->tipoUtilizador?->nome === 'Administrador';
+
+        $navStack = session('nav_stack', []);
+        $canGoBack = is_array($navStack) && count($navStack) >= 2;
     @endphp
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,7 +21,25 @@
 
             {{-- Left side --}}
             <div class="flex">
-                <div class="shrink-0 flex items-center">
+                <div class="shrink-0 flex items-center gap-2">
+
+                    {{-- Back button (só aparece se houver histórico útil) --}}
+                    @if ($canGoBack)
+                        <a
+                            href="{{ route('back') }}"
+                            class="hidden sm:inline-flex items-center justify-center p-2 rounded-md
+                                   text-white/70 hover:text-white focus:outline-none transition border"
+                            style="border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.04);"
+                            aria-label="Voltar"
+                            title="Voltar"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </a>
+                    @endif
+
                     <a href="{{ route('user.dashboard') }}" class="inline-flex items-center">
                         <img
                             src="{{ asset('images/logo_communico.svg') }}"
@@ -137,22 +158,22 @@
     <div :class="{ 'block': open, 'hidden': ! open }" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link
-                    :href="route('user.dashboard')"
-                    :active="request()->routeIs('user.dashboard')"
+                :href="route('user.dashboard')"
+                :active="request()->routeIs('user.dashboard')"
                 class="text-white/85 hover:text-white"
             >
                 {{ __('Painel') }}
             </x-responsive-nav-link>
 
-                @if (($user?->tipoUtilizador?->nome ?? null) === 'Administrador')
-                    <x-responsive-nav-link
-                        :href="route('admin.dashboard')"
-                        :active="request()->routeIs('admin.*')"
-                        class="text-white/85 hover:text-white"
-                    >
-                        {{ __('Administração') }}
-                    </x-responsive-nav-link>
-                @endif
+            @if (($user?->tipoUtilizador?->nome ?? null) === 'Administrador')
+                <x-responsive-nav-link
+                    :href="route('admin.dashboard')"
+                    :active="request()->routeIs('admin.*')"
+                    class="text-white/85 hover:text-white"
+                >
+                    {{ __('Administração') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <div class="pt-4 pb-1 border-t" style="border-color: rgba(255,255,255,.10);">
