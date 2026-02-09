@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 use Illuminate\Mail\MailManager;
+use Illuminate\Support\Facades\URL;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -20,6 +21,14 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Blade::component('main-layout', \Illuminate\View\Component::class);
+
+        if (app()->runningInConsole()) {
+            URL::forceRootUrl(config('app.url'));
+
+            if (str_starts_with((string) config('app.url'), 'https://')) {
+                URL::forceScheme('https');
+            }
+        }
 
         $this->app->make(MailManager::class)->extend('brevo', function ($config) {
 

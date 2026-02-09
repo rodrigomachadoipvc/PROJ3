@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Gate;
 use App\Models\Anexo;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Controllers\Admin\EstatisticasController;
+use App\Http\Middleware\TrackBackStack;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,11 +38,16 @@ require __DIR__ . '/auth.php';
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified'])->group(function () {
-
+Route::middleware(['auth', 'verified', TrackBackStack::class])->group(function () {
+    
     Route::get('/dashboard', function () {
         return redirect()->route('user.dashboard');
     })->name('dashboard');
+
+        Route::get('/back', function () {
+            $fallback = route('user.dashboard');
+            return redirect()->to(TrackBackStack::popBackUrl($fallback));
+        })->name('back');
 
     Route::get('/user/dashboard', [UserDashboardController::class, 'index'])
         ->middleware(['auth', 'verified'])
@@ -93,7 +99,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified', EnsureUserIsAdmin::class])
+Route::middleware(['auth', 'verified', EnsureUserIsAdmin::class, \App\Http\Middleware\TrackBackStack::class])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {

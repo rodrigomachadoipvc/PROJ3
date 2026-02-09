@@ -50,6 +50,9 @@
                 />
 
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                @if ($errors->has('email') && ! $errors->has('password'))
+                    <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                @endif
             </div>
 
             <!-- Remember + Forgot -->
