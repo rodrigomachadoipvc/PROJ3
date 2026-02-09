@@ -137,7 +137,7 @@
                             {{ $ultimaSistema->conteudo ?? 'Anexo' }}
                         </p>
                         <span class="text-[11px] text-white/50 float-right">
-                            {{ $ultimaSistema->created_at->diffForHumans() }}
+                            {{ $ultimaSistema->created_at->locale('pt_PT')->diffForHumans() }}
                         </span>
                         <div class="clear-both"></div>
                     @else
@@ -189,7 +189,8 @@
                         $matchBody = $conversa->matched_message_body ?? null;
                     @endphp
 
-                    <div wire:key="conversa-{{ $conversa->id }}" wire:click="selecionarConversa({{ $conversa->id }}, {{ $conversa->matched_message_id ?? 'null' }})"
+                    <div wire:key="conversa-{{ $conversa->id }}"
+                         wire:click="selecionarConversa({{ $conversa->id }}, {{ $conversa->matched_message_id ?? 'null' }})"
                          class="block p-3 rounded-lg cursor-pointer shadow-sm mb-2 border transition
                          {{ $conversaAtiva && $conversaAtiva->id === $conversa->id
                             ? 'bg-white/10 border-white/20 ring-1 ring-[var(--c-a2)]'
@@ -219,7 +220,7 @@
                             </p>
                             @if ($ultima)
                                 <span class="text-[11px] text-white/45 float-right">
-                                    {{ $ultima->created_at->diffForHumans() }}
+                                    {{ $ultima->created_at->locale('pt_PT')->diffForHumans() }}
                                 </span>
                             @endif
                         @elseif ($termo !== '' && $conversa->matched_group_name)
@@ -229,7 +230,7 @@
                             </p>
                             @if ($ultima)
                                 <span class="text-[11px] text-white/45 float-right">
-                                    {{ $ultima->created_at->diffForHumans() }}
+                                    {{ $ultima->created_at->locale('pt_PT')->diffForHumans() }}
                                 </span>
                             @endif
                         @elseif ($termo !== '' && $conversa->matched_participant_name)
@@ -239,7 +240,7 @@
                             </p>
                             @if ($ultima)
                                 <span class="text-[11px] text-white/45 float-right">
-                                    {{ $ultima->created_at->diffForHumans() }}
+                                    {{ $ultima->created_at->locale('pt_PT')->diffForHumans() }}
                                 </span>
                             @endif
                         @elseif ($ultima)
@@ -248,7 +249,7 @@
                                 {{ $ultima->conteudo ?? 'Anexo' }}
                             </p>
                             <span class="text-[11px] text-white/45 float-right">
-                                {{ $ultima->created_at->diffForHumans() }}
+                                {{ $ultima->created_at->locale('pt_PT')->diffForHumans() }}
                             </span>
                         @else
                             <p class="text-xs text-white/45 italic mt-1">Nenhuma mensagem ainda.</p>
@@ -280,12 +281,31 @@
                             substr($partes[0], 0, 1) . (count($partes) > 1 ? substr(end($partes), 0, 1) : '')
                         );
                     };
+
                     $previousEmissorId = null;
+                    $previousDayKey = null;
                 @endphp
 
                 @if ($conversaAtiva)
                     @forelse ($mensagens as $mensagem)
                         @php
+                            $tz = config('app.timezone') ?: 'UTC';
+                            $dt = $mensagem->created_at?->timezone($tz);
+
+                            $dayKey = $dt?->format('Y-m-d');
+                            $dayChanged = ($previousDayKey !== $dayKey);
+
+                            if ($dayChanged) {
+                                $previousDayKey = $dayKey;
+                                $previousEmissorId = null; // reinicia agrupamento por emissor ao mudar de dia
+                            }
+
+                            $dayLabel = $dt?->isToday()
+                                ? 'Hoje'
+                                : ($dt?->isYesterday()
+                                    ? 'Ontem'
+                                    : $dt?->format('d/m/Y'));
+
                             $sender = $mensagem->emissor;
                             $isOwn = $mensagem->emissor_id == Auth::id();
                             $isNewGroup = $previousEmissorId !== $mensagem->emissor_id;
@@ -293,6 +313,14 @@
                             $senderAvatar = $sender->avatar_url_public;
                             $senderInitials = $initials($sender->nome);
                         @endphp
+
+                        @if ($dayChanged)
+                            <div class="flex justify-center my-4">
+                                <span class="text-xs text-white/60 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
+                                    {{ $dayLabel }}
+                                </span>
+                            </div>
+                        @endif
 
                         <div id="msg-{{ $mensagem->id }}"
                              class="{{ $highlightMessageId === $mensagem->id ? 'ring-2 ring-yellow-400/60 rounded-2xl' : '' }}">
@@ -1111,7 +1139,6 @@
                 }
             } catch (_) {}
 
-            // fallback defensivo (APIs internas podem variar)
             try {
                 const store = Livewire?.components?.componentsById || Livewire?.components?.components;
                 if (store && typeof store === 'object') {
@@ -1123,7 +1150,6 @@
         function lwSetSelectedEmpty(wireId) {
             const id = (wireId || '').trim();
 
-            // tenta por wire:id
             if (id && window.Livewire && typeof Livewire.find === 'function') {
                 try {
                     const comp = Livewire.find(id);
@@ -1131,7 +1157,6 @@
                 } catch (_) {}
             }
 
-            // fallback: limpa em qualquer componente (evita ficar preso)
             lwClearSelectedEverywhere();
         }
 
@@ -1163,7 +1188,7 @@
         }, true);
 
         // -----------------------------
-        // REMOVER MEMBRO: modal bonito (sem confirm)
+        // REMOVER MEMBRO: modal bonito (sem confirm nativo)
         // -----------------------------
         function getRemoveModalDom() {
             const modal = document.getElementById('comm-remove-member-modal');
@@ -1353,9 +1378,8 @@
             });
 
             // ✅ Livewire 3: hook "commit"
-            // - mantém o reset do modal "Adicionar membro"
-            // - garante que o chat abre sempre no fundo (WhatsApp) e faz auto-scroll apenas quando muda
-            //   a conversa ou entra uma mensagem nova (sem highlight).
+            // - mantém reset do modal "Adicionar membro"
+            // - WhatsApp auto-scroll (só quando muda conversa / entra msg nova, e sem highlight)
             if (window.Livewire && typeof Livewire.hook === 'function') {
                 Livewire.hook('commit', ({ succeed, fail }) => {
                     succeed(() => {
@@ -1379,6 +1403,7 @@
                             pendingAddMemberReset = false;
                             resetAddMemberUiAndState();
                         }
+                        afterDomPaint(() => maybeAutoScroll(false));
                     });
                 } catch (_) {}
             }
