@@ -209,12 +209,14 @@ class ChatInterface extends Component
                 $idsAntes = Mensagem::where('conversa_id', $conversaId)
                     ->where('created_at', '<=', $anchor->created_at)
                     ->orderByDesc('created_at')
+                    ->orderByDesc('id')
                     ->limit($antes + 1) // inclui a âncora
                     ->pluck('id');
 
                 $idsDepois = Mensagem::where('conversa_id', $conversaId)
                     ->where('created_at', '>', $anchor->created_at)
                     ->orderBy('created_at')
+                    ->orderBy('id')
                     ->limit($depois)
                     ->pluck('id');
 
@@ -223,6 +225,7 @@ class ChatInterface extends Component
                 $this->mensagens = Mensagem::with(['emissor', 'anexos'])
                     ->whereIn('id', $ids)
                     ->orderBy('created_at', 'asc')
+                    ->orderBy('id', 'asc')
                     ->get();
 
                 return;
@@ -236,6 +239,7 @@ class ChatInterface extends Component
             // Aqui queremos as ÚLTIMAS N mensagens, por isso limpamos a ordenação da relação.
             ->reorder()
             ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->limit($limit)
             ->get()
             ->reverse()
