@@ -17,7 +17,9 @@ class Conversa extends Model
 
     public function mensagens(): HasMany
     {
-        return $this->hasMany(Mensagem::class)->orderBy('created_at', 'asc');
+        return $this->hasMany(Mensagem::class)
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc');
     }
 
     public function participantes(): BelongsToMany

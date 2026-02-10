@@ -341,7 +341,7 @@
                                         <div class="max-w-lg">
                                             <div class="bg-[rgba(96,165,250,.18)] border border-white/10 text-white rounded-2xl px-4 py-2 shadow-sm">
                                                 @if (!empty($mensagem->conteudo))
-                                                    <p class="text-sm break-words">{{ $mensagem->conteudo }}</p>
+                                                    <p class="text-sm break-words whitespace-pre-line">{!! nl2br(e($mensagem->conteudo)) !!}</p>
                                                 @endif
                                                 @if ($mensagem->anexos && $mensagem->anexos->count())
                                                     <div class="mt-2 space-y-2">
@@ -401,7 +401,7 @@
                                             <div class="bg-white/5 border border-white/10 text-white rounded-2xl px-4 py-2 shadow-sm">
                                                 <p class="text-xs font-semibold text-white/80 mb-1">{{ $sender->nome }}</p>
                                                 @if (!empty($mensagem->conteudo))
-                                                    <p class="text-sm break-words">{{ $mensagem->conteudo }}</p>
+                                                    <p class="text-sm break-words whitespace-pre-line">{!! nl2br(e($mensagem->conteudo)) !!}</p>
                                                 @endif
                                                 @if ($mensagem->anexos && $mensagem->anexos->count())
                                                     <div class="mt-2 space-y-2">
@@ -444,7 +444,7 @@
                                         <div class="max-w-lg mr-10">
                                             <div class="bg-[rgba(96,165,250,.18)] border border-white/10 text-white rounded-2xl px-4 py-2 shadow-sm">
                                                 @if (!empty($mensagem->conteudo))
-                                                    <p class="text-sm break-words">{{ $mensagem->conteudo }}</p>
+                                                    <p class="text-sm break-words whitespace-pre-line">{!! nl2br(e($mensagem->conteudo)) !!}</p>
                                                 @endif
                                                 @if ($mensagem->anexos && $mensagem->anexos->count())
                                                     <div class="mt-2 space-y-2">
@@ -485,7 +485,7 @@
                                         <div class="max-w-lg ml-10">
                                             <div class="bg-white/5 border border-white/10 text-white rounded-2xl px-4 py-2 shadow-sm">
                                                 @if (!empty($mensagem->conteudo))
-                                                    <p class="text-sm break-words">{{ $mensagem->conteudo }}</p>
+                                                    <p class="text-sm break-words whitespace-pre-line">{!! nl2br(e($mensagem->conteudo)) !!}</p>
                                                 @endif
                                                 @if ($mensagem->anexos && $mensagem->anexos->count())
                                                     <div class="mt-2 space-y-2">
@@ -1016,8 +1016,6 @@
             setTimeout(doScroll, 240);
         }
 
-        // WhatsApp: manter mensagens por ordem cronológica (topo->fundo) e garantir
-        // que a vista abre no fundo quando há conversa ativa.
         function maybeAutoScroll(force = false) {
             const container = document.getElementById('chat-scroll');
             if (!container) return;
@@ -1047,9 +1045,6 @@
             }
         }
 
-        // -----------------------------
-        // ADICIONAR MEMBRO: pesquisa robusta (delegação)
-        // -----------------------------
         function norm(s) {
             return (s || '')
                 .toString()
@@ -1106,9 +1101,6 @@
             openAddBox(dom);
         }
 
-        // -----------------------------
-        // FIX DEFINITIVO: adicionar vários membros seguidos
-        // -----------------------------
         let pendingAddMemberReset = false;
         let pendingAddMemberWireId = '';
 
@@ -1175,10 +1167,8 @@
             const wireId = (pendingAddMemberWireId || '').trim();
             pendingAddMemberWireId = '';
 
-            // 1) limpar estado Livewire (para desativar botão até nova seleção)
             lwSetSelectedEmpty(wireId);
 
-            // 2) limpar UI (depois do patch do DOM)
             afterDomPaint(() => {
                 const dom = getAddMemberDom();
                 if (!dom) return;
@@ -1190,7 +1180,6 @@
             });
         }
 
-        // marca reset quando clicas "Adicionar"
         document.addEventListener('click', (e) => {
             const btn = e.target ? e.target.closest('#add-member-add-btn') : null;
             if (!btn) return;
@@ -1198,9 +1187,6 @@
             pendingAddMemberWireId = captureWireIdFrom(btn);
         }, true);
 
-        // -----------------------------
-        // REMOVER MEMBRO: modal bonito (sem confirm nativo)
-        // -----------------------------
         function getRemoveModalDom() {
             const modal = document.getElementById('comm-remove-member-modal');
             const overlay = document.getElementById('comm-remove-member-overlay');
@@ -1277,9 +1263,6 @@
             window.commCloseRemoveMemberModal();
         }
 
-        // -----------------------------
-        // Eventos globais (delegação)
-        // -----------------------------
         document.addEventListener('focusin', (e) => {
             if (e.target && e.target.id === 'add-member-search') {
                 applyAddMemberFilter();
@@ -1334,7 +1317,6 @@
             }
         }, true);
 
-        // Remover modal: overlay/cancel/confirm
         document.addEventListener('click', (e) => {
             const dom = getRemoveModalDom();
             if (!dom) return;
@@ -1350,9 +1332,6 @@
             }
         }, true);
 
-        // -----------------------------
-        // Livewire init
-        // -----------------------------
         document.addEventListener('livewire:init', () => {
             Livewire.on('conversas-ids', ({ ids, activeId: aId }) => {
                 syncSubscriptions(ids || [], aId || null);
@@ -1388,9 +1367,6 @@
                 if (upload) upload.value = '';
             });
 
-            // ✅ Livewire 3: hook "commit"
-            // - mantém reset do modal "Adicionar membro"
-            // - WhatsApp auto-scroll (só quando muda conversa / entra msg nova, e sem highlight)
             if (window.Livewire && typeof Livewire.hook === 'function') {
                 Livewire.hook('commit', ({ succeed, fail }) => {
                     succeed(() => {
@@ -1407,7 +1383,6 @@
                     });
                 });
 
-                // Fallback Livewire 2 (caso exista)
                 try {
                     Livewire.hook('message.processed', () => {
                         if (pendingAddMemberReset) {
@@ -1419,7 +1394,6 @@
                 } catch (_) {}
             }
 
-            // Primeira carga: se já existe conversa ativa (ex.: vindo da dashboard), começa no fundo.
             afterDomPaint(() => maybeAutoScroll(true));
         });
     })();
