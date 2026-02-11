@@ -2,31 +2,46 @@
 
 namespace App\Services;
 
+use App\Events\NovaMensagemEnviada;
+use App\Models\AutoReply;
 use App\Models\Mensagem;
 use App\Models\User;
-use App\Models\AutoReply;
+use Illuminate\Support\Facades\DB;
 
 class AutoReplyService
 {
     public function handle(Mensagem $mensagem): ?Mensagem
     {
-        if ($mensagem->emissor?->is_system) return null;
+        if ($mensagem->emissor?->is_system) {
+            return null;
+        }
 
         $texto = mb_strtolower(trim($mensagem->conteudo ?? ''));
-        if ($texto === '') return null;
+        if ($texto === '') {
+            return null;
+        }
 
         $resposta = $this->matchRules($texto);
-        if (! $resposta) return null;
+        if (! $resposta) {
+            return null;
+        }
 
         $systemUser = User::where('is_system', true)->first();
-        if (! $systemUser) return null;
+        if (! $systemUser) {
+            return null;
+        }
 
-        return $mensagem->conversa->mensagens()->create([
+        $mensagemSistema = $mensagem->conversa->mensagens()->create([
             'emissor_id' => $systemUser->id,
-            'conteudo'   => $resposta,
+            'conteudo' => $resposta,
         ]);
-    }
 
+        DB::afterCommit(function () use ($mensagemSistema) {
+            broadcast(new NovaMensagemEnviada($mensagemSistema));
+        });
+
+        return $mensagemSistema;
+    }
 
     protected function matchRules(string $texto): ?string
     {

@@ -19,6 +19,9 @@ use App\Services\SystemConversationService;
 use Illuminate\Support\Collection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
+use App\Events\NovaMensagemEnviada;
+
+
 class ChatInterface extends Component
 {
     use WithFileUploads;
@@ -61,6 +64,40 @@ class ChatInterface extends Component
     public array $rolesPermitidos = ['member', 'moderator'];
     public ?int $selectedUserToAdd = null;
     public Collection $usersDisponiveisAdicionar;
+
+    /* =========================================================
+     * 🔴 LISTENERS ECHO (REALTIME)
+     * ========================================================= */
+    protected function getListeners(): array
+    {
+        $listeners = $this->listeners;
+        if ($this->conversaAtiva) {
+            $listeners[
+                "echo:conversa.{$this->conversaAtiva->id},mensagem.enviada"
+            ] = 'mensagemRecebida';
+        }
+        return $listeners;
+    }
+    public function mensagemRecebida(array $payload): void
+    {
+        logger()->info('[Realtime][Livewire] Evento Echo recebido', $payload);
+        $mensagem = Mensagem::with(['emissor', 'anexos'])
+            ->find($payload['id'] ?? null);
+        if (! $mensagem) {
+            logger()->warning('[Realtime][Livewire] Mensagem não encontrada', $payload);
+            return;
+        }
+        if ($this->mensagens->contains('id', $mensagem->id)) {
+            return;
+        }
+        $this->mensagens->push($mensagem);
+        $this->normalizarMensagensEmMemoria();
+        $this->recarregarBarraLateral();
+        $this->dispatch('scroll-chat-para-fundo');
+    }
+    /* =========================================================
+     * 🔽 RESTANTE FICHEIRO — INALTERADO
+     * ========================================================= */
 
     public function mount(Request $request): void
     {
@@ -244,6 +281,29 @@ class ChatInterface extends Component
             ->get()
             ->reverse()
             ->values();
+    }
+
+    private function normalizarMensagensEmMemoria(): void
+    {
+        $limite = max(20, (int) $this->mensagensPorDefeito);
+
+        // Ordena de forma determinística (mesmo que eventos cheguem fora de ordem)
+        $this->mensagens = $this->mensagens
+            ->sort(function ($a, $b) {
+                $aTs = $a?->created_at?->timestamp ?? 0;
+                $bTs = $b?->created_at?->timestamp ?? 0;
+
+                if ($aTs !== $bTs) {
+                    return $aTs <=> $bTs;
+                }
+
+                return ((int) ($a->id ?? 0)) <=> ((int) ($b->id ?? 0));
+            })
+            ->values();
+
+        if ($this->mensagens->count() > $limite) {
+            $this->mensagens = $this->mensagens->slice(-$limite)->values();
+        }
     }
 
     public function hydrate(): void
@@ -459,14 +519,16 @@ class ChatInterface extends Component
         }
 
         $novaMsg = null;
-        DB::transaction(function () use ($utilizador, $temTexto, &$novaMsg) {
+        $autoReplyMsg = null;
+
+        DB::transaction(function () use ($utilizador, $temTexto, &$novaMsg, &$autoReplyMsg) {
             $novaMsg = $this->conversaAtiva->mensagens()->create([
                 'emissor_id' => $utilizador->id,
                 'conteudo'   => $temTexto ? $this->novaMensagem : null,
             ]);
 
             try {
-                app(\App\Services\AutoReplyService::class)->handle($novaMsg);
+                $autoReplyMsg = app(\App\Services\AutoReplyService::class)->handle($novaMsg);
             } catch (\Throwable $e) {
                 report($e);
             }
@@ -494,14 +556,30 @@ class ChatInterface extends Component
             }
         });
 
-        // Push manual para $mensagens para evitar recarregar tudo e perda de state
+        // Push manual para $mensagens (e auto-reply, se existir) para evitar recarregar tudo e perda de state
+        $paraInjetar = collect();
+
         if ($novaMsg) {
             $novaMsg->load(['emissor', 'anexos']);
-            $this->mensagens->push($novaMsg);
-            $limite = max(20, (int) $this->mensagensPorDefeito);
-            if ($this->mensagens->count() > $limite) {
-                $this->mensagens = $this->mensagens->slice(-$limite)->values();
+            $paraInjetar->push($novaMsg);
+        }
+
+        if ($autoReplyMsg) {
+            $autoReplyMsg->load(['emissor', 'anexos']);
+            $paraInjetar->push($autoReplyMsg);
+        }
+
+        foreach ($paraInjetar as $m) {
+            if (! $this->mensagens->contains('id', $m->id)) {
+                $this->mensagens->push($m);
             }
+        }
+
+        $this->normalizarMensagensEmMemoria();
+
+        // Broadcast AFTER COMMIT (e depois de injetar no state local) para evitar duplicados / ordem errada
+        foreach ($paraInjetar as $m) {
+            event(new NovaMensagemEnviada($m));
         }
 
         $this->recarregarBarraLateral();
@@ -730,11 +808,6 @@ class ChatInterface extends Component
 
     public function onMensagemRecebidaRealtime(array $payload): void
     {
-        // ignora apenas sistema (mantém UI limpa)
-        if (($payload['emissor']['is_system'] ?? false)) {
-            return;
-        }
-
         if ($this->mensagens->contains('id', $payload['id'] ?? null)) {
             return;
         }
@@ -745,11 +818,7 @@ class ChatInterface extends Component
         }
 
         $this->mensagens->push($mensagem);
-
-        $limite = max(20, (int) $this->mensagensPorDefeito);
-        if ($this->mensagens->count() > $limite) {
-            $this->mensagens = $this->mensagens->slice(-$limite)->values();
-        }
+        $this->normalizarMensagensEmMemoria();
 
         // **Crítico**: refresca sidebar para ordenar e atualizar snippet/hora
         $this->recarregarBarraLateral();
@@ -759,10 +828,6 @@ class ChatInterface extends Component
 
     public function onMensagemRecebidaRealtimeSidebar(array $payload): void
     {
-        if (($payload['emissor']['is_system'] ?? false)) {
-            return;
-        }
-
         $conversaId = (int)($payload['conversa_id'] ?? 0);
 
         // Se o broadcast não vier com conversa_id, faz fallback ao DB
